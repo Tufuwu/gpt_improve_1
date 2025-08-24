@@ -1,57 +1,49 @@
+# From: https://github.com/github/gitignore/blob/master/Python.gitignore
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
-# C extensions
-*.so
+*$py.class
 
 # Distribution / packaging
 .Python
-env/
 build/
 develop-eggs/
 dist/
 downloads/
 eggs/
+.eggs/
 lib/
 lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+MANIFEST
 
 # Unit test / coverage reports
-htmlcov/
 .tox/
-.coverage
-.cache
-nosetests.xml
-coverage.xml
+.pytest_cache/
 
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
+# Environments
+.env
+.venv
+env/
+venv/
+# Custom: python2 venv
+venv2/
 
 # Sphinx documentation
 docs/_build/
 
-# PyBuilder
-target/
+# mypy
+.mypy_cache/
 
-*.jpg
-TM_WORLD_BORDERS*
+# --- CUSTOM ---
+
+# temp outputs for isort and flake8
+/isort.out
+/flake8.out
