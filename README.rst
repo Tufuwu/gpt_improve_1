@@ -1,169 +1,143 @@
-.. image:: https://github.com/MahjongRepository/mahjong/workflows/Mahjong%20lib/badge.svg
-    :target: https://github.com/MahjongRepository/mahjong
+==================
+Django-MongoEngine
+==================
 
-Python 2.7 and 3.5+ are supported.
+|lifecycle| |gitter|
 
-We support the Japanese version of mahjong only (riichi mahjong).
+.. |lifecycle| image:: https://img.shields.io/osslifecycle/MongoEngine/django-mongoengine
+   :alt: OSS Lifecycle
 
-
-Riichi mahjong hands calculation
-================================
-
-This library can calculate hand cost (han, fu with details, yaku, and scores) for riichi mahjong (Japanese version).
-
-It supports optional features like:
-
-==========================================================================================  ========================= ===========================
-Feature                                                                                     Keyword parameter         Default value
-==========================================================================================  ========================= ===========================
-Disable or enable open tanyao yaku                                                          has_open_tanyao           False
-------------------------------------------------------------------------------------------  ------------------------- ---------------------------
-Disable or enable aka dora in the hand                                                      has_aka_dora              False
-------------------------------------------------------------------------------------------  ------------------------- ---------------------------
-Disable or enable double yakuman (like suuanko tanki)                                       has_double_yakuman        True
-------------------------------------------------------------------------------------------  ------------------------- ---------------------------
-Settings for different kazoe yakuman calculation (it сan be an yakuman or a sanbaiman)      kazoe_limit               HandConstants.KAZOE_LIMITED
-------------------------------------------------------------------------------------------  ------------------------- ---------------------------
-Support kiriage mangan                                                                      kiriage                   False
-------------------------------------------------------------------------------------------  ------------------------- ---------------------------
-Allow to disable additional +2 fu in open hand (you can make 1-20 hand with that setting)   fu_for_open_pinfu         True
-------------------------------------------------------------------------------------------  ------------------------- ---------------------------
-Disable or enable pinfu tsumo                                                               fu_for_pinfu_tsumo        False
-------------------------------------------------------------------------------------------  ------------------------- ---------------------------
-Counting renhou as 5 han or yakuman                                                         renhou_as_yakuman         False
-------------------------------------------------------------------------------------------  ------------------------- ---------------------------
-Disable or enable Daisharin yakuman                                                         has_daisharin             False
-------------------------------------------------------------------------------------------  ------------------------- ---------------------------
-Disable or enable Daisharin in other suits (Daisuurin, Daichikurin)                         has_daisharin_other_suits False
-==========================================================================================  ========================= ===========================
+.. |gitter| image:: https://badges.gitter.im/gitterHQ/gitter.png
+   :target: https://gitter.im/MongoEngine/django-mongoengine
+   :alt: Gitter chat
 
 
-The code was validated on tenhou.net phoenix replays in total on **11,120,125 hands**.
+THIS IS UNSTABLE PROJECT, IF YOU WANT TO USE IT - FIX WHAT YOU NEED
 
-So, we can say that our hand calculator works the same way that tenhou.net hand calculation.
+Right now we're targeting to get things working on Django 2.0 and 3.0;
 
-Project repository: https://github.com/MahjongRepository/mahjong
-
-
-How to install
---------------
-
-::
-
-   pip install mahjong
+WARNING:
+--------
+Maybe there is better option for mongo support, take a look at https://nesdis.github.io/djongo/;
+It's python3 only and i have not tried it yet, but looks promising.
 
 
-How to use
-----------
+Working / Django 2.0-3.0
+---------------------
 
-You can find more examples here: https://github.com/MahjongRepository/mahjong/blob/master/doc/examples.py
+* [ok] sessions
+* [ok] models/fields, fields needs testing
+* [ok] views
+* [ok] auth
+* [?] admin - partially working, some things broken
 
-Let's calculate how much will cost this hand:
+Current status
+-------------------------------------------------------------------------------
 
-.. image:: https://user-images.githubusercontent.com/475367/30796350-3d30431a-a204-11e7-99e5-aab144c82f97.png
+Many parts of projects rewritten/removed;
+Instead of copying django code i try to subclass/reuse/even monkey-patch;
+Everything listed above is working; admin - just base fuctions
+like changelist/edit, not tested with every form type; need's more work.
 
+Some code just plaholder to make things work;
+`django/forms/document_options.py` - dirty hack absolutely required to
+get thigs work with django. It replaces mongo _meta on model/class and
+provide django-like interface.
+It get's replaced after class creation via some metaclass magick.
 
-Tanyao hand by ron
-^^^^^^^^^^^^^^^^^^
+Fields notes
+------------
 
-.. code-block:: python
-
-    from mahjong.hand_calculating.hand import HandCalculator
-    from mahjong.tile import TilesConverter
-    from mahjong.hand_calculating.hand_config import HandConfig
-    from mahjong.meld import Meld
-
-    calculator = HandCalculator()
-
-    # we had to use all 14 tiles in that array
-    tiles = TilesConverter.string_to_136_array(man='22444', pin='333567', sou='444')
-    win_tile = TilesConverter.string_to_136_array(sou='4')[0]
-
-    result = calculator.estimate_hand_value(tiles, win_tile)
-
-    print(result.han, result.fu)
-    print(result.cost['main'])
-    print(result.yaku)
-    for fu_item in result.fu_details:
-        print(fu_item)
-
-Output:
-
-::
-
-    1 40
-    1300
-    [Tanyao]
-    {'fu': 30, 'reason': 'base'}
-    {'fu': 4, 'reason': 'closed_pon'}
-    {'fu': 4, 'reason': 'closed_pon'}
-    {'fu': 2, 'reason': 'open_pon'}
+* mongo defaults Field(required=False), changed to django-style defaults
+  -> Field(blank=False), and setting required = not blank in Field.__init__
 
 
-How about tsumo?
-^^^^^^^^^^^^^^^^
 
-.. code-block:: python
+TODO
+----
 
-    result = calculator.estimate_hand_value(tiles, win_tile, config=HandConfig(is_tsumo=True))
+* Sync some files/docs that removed from mongoengine: https://github.com/seglberg/mongoengine/commit/a34f4c1beb93f430c37da20c8fd96ce02a0f20c1?diff=unified
+* Add docs for integrating: https://github.com/hmarr/django-debug-toolbar-mongo
+* Take a look at django-mongotools: https://github.com/wpjunior/django-mongotools
 
-    print(result.han, result.fu)
-    print(result.cost['main'], result.cost['additional'])
-    print(result.yaku)
-    for fu_item in result.fu_details:
-        print(fu_item)
+Connecting
+==========
 
-Output:
+In your **settings.py** file, add following lines::
 
-::
+    MONGODB_DATABASES = {
+        "default": {
+            "name": database_name,
+            "host": database_host,
+            "password": database_password,
+            "username": database_user,
+            "tz_aware": True, # if you using timezones in django (USE_TZ = True)
+        },
+    }
 
-    4 40
-    4000 2000
-    [Menzen Tsumo, Tanyao, San Ankou]
-    {'fu': 20, 'reason': 'base'}
-    {'fu': 4, 'reason': 'closed_pon'}
-    {'fu': 4, 'reason': 'closed_pon'}
-    {'fu': 4, 'reason': 'closed_pon'}
-    {'fu': 2, 'reason': 'tsumo'}
+    INSTALLED_APPS += ["django_mongoengine"]
 
+Documents
+=========
+Inhherit your documents from ``django_mongoengine.Document``,
+and define fields using ``django_mongoengine.fields``.::
 
-What if we add open set?
-^^^^^^^^^^^^^^^^^^^^^^^^
+    from django_mongoengine import Document, EmbeddedDocument, fields
 
-.. code-block:: python
+    class Comment(EmbeddedDocument):
+        created_at = fields.DateTimeField(
+            default=datetime.datetime.now, editable=False,
+        )
+        author = fields.StringField(verbose_name="Name", max_length=255)
+        email  = fields.EmailField(verbose_name="Email")
+        body = fields.StringField(verbose_name="Comment")
 
-    melds = [Meld(meld_type=Meld.PON, tiles=TilesConverter.string_to_136_array(man='444'))]
-
-    result = calculator.estimate_hand_value(tiles, win_tile, melds=melds, config=HandConfig(options=OptionalRules(has_open_tanyao=True)))
-
-    print(result.han, result.fu)
-    print(result.cost['main'])
-    print(result.yaku)
-    for fu_item in result.fu_details:
-        print(fu_item)
-
-Output:
-
-::
-
-    1 30
-    1000
-    [Tanyao]
-    {'fu': 20, 'reason': 'base'}
-    {'fu': 4, 'reason': 'closed_pon'}
-    {'fu': 2, 'reason': 'open_pon'}
-    {'fu': 2, 'reason': 'open_pon'}
+    class Post(Document):
+        created_at = fields.DateTimeField(
+            default=datetime.datetime.now, editable=False,
+        )
+        title = fields.StringField(max_length=255)
+        slug = fields.StringField(max_length=255, primary_key=True)
+        comments = fields.ListField(
+            fields.EmbeddedDocumentField('Comment'), blank=True,
+        )
 
 
-Shanten calculation
-===================
+Sessions
+========
+Django allows the use of different backend stores for its sessions. MongoEngine
+provides a MongoDB-based session backend for Django, which allows you to use
+sessions in your Django application with just MongoDB. To enable the MongoEngine
+session backend, ensure that your settings module has
+``'django.contrib.sessions.middleware.SessionMiddleware'`` in the
+``MIDDLEWARE_CLASSES`` field  and ``'django.contrib.sessions'`` in your
+``INSTALLED_APPS``. From there, all you need to do is add the following line
+into your settings module::
 
-.. code-block:: python
+    SESSION_ENGINE = 'django_mongoengine.sessions'
+    SESSION_SERIALIZER = 'django_mongoengine.sessions.BSONSerializer'
 
-    from mahjong.shanten import Shanten
+Django provides session cookie, which expires after
+```SESSION_COOKIE_AGE``` seconds, but doesn't delete cookie at sessions
+backend, so ``'mongoengine.django.sessions'`` supports  `mongodb TTL <http://docs.mongodb.org/manual/tutorial/expire-data/>`_.
 
-    shanten = Shanten()
-    tiles = TilesConverter.string_to_34_array(man='13569', pin='123459', sou='443')
-    result = shanten.calculate_shanten(tiles)
+.. note:: ``SESSION_SERIALIZER`` is only necessary in Django>1.6 as the default
+   serializer is based around JSON and doesn't know how to convert
+   ``bson.objectid.ObjectId`` instances to strings.
 
-    print(result)
+
+How to run example app
+----------------------
+.. code::
+
+    poetry install
+    poetry run pip install -r example/tumblelog/requirements.txt
+    poetry run python example/tumblelog/manage.py runserver
+
+
+How to run tests
+----------------
+.. code::
+
+    poetry install
+    poetry run python -m pytest
