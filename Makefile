@@ -1,19 +1,20 @@
-override T_FLAGS += -v
-install:
-	python -m pip install --upgrade pip
-	pip install -r requirements.txt
+# This file is part of censusgeocode.
+# https://github.com/fitnr/censusgeocode
 
-test: test-base test-instances test-update-instances
+# Licensed under the General Public License (version 3)
+# http://opensource.org/licenses/LGPL-3.0
+# Copyright (c) 2015-9, Neil Freeman <contact@fakeisthenewreal.org>
 
-test-base:
-	pytest tests -k 'not test_instances' $(T_FLAGS)
+.PHONY: install build upload clean deploy test
 
-test-instances:
-	pytest tests -k 'test_instances and not test_update' $(T_FLAGS)
+install: ; pip install .
 
-test-update-instances:
-	pytest tests -k 'test_instances and test_update' $(T_FLAGS)
+test: ; python -m unittest tests/test_*.py
 
-lint:
-	flake8 pybikes tests --count --select=E9,F63,F7,F82 --show-source --statistics
-	flake8 pybikes tests --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+deploy: build
+	twine upload dist/*
+
+build: | clean
+	python -m build
+
+clean:; rm -rf dist build
