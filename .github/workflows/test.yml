@@ -1,4 +1,4 @@
-name: Python package
+name: Python CI
 
 on:
   push:
@@ -9,53 +9,58 @@ on:
       - main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  test:
+    runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9']
-
+        python-version: [3.7, 3.8, 3.9, 3.10]
+        django-version: ["1.11", "2.0", "2.1", "2.2", "3.0", "3.1", "3.2", "4.0"]
+        exclude:
+          - python-version: 3.7
+            django-version: "4.0"
+          - python-version: 3.8
+            django-version: "1.11"
+          - python-version: 3.8
+            django-version: "2.0"
+          - python-version: 3.8
+            django-version: "2.1"
+          - python-version: 3.9
+            django-version: "1.11"
+          - python-version: 3.9
+            django-version: "2.0"
+          - python-version: 3.9
+            django-version: "2.1"
+          - python-version: 3.10
+            django-version: "1.11"
+          - python-version: 3.10
+            django-version: "2.0"
+          - python-version: 3.10
+            django-version: "2.1"
+          - python-version: 3.10
+            django-version: "2.2"
+          - python-version: 3.10
+            django-version: "3.0"
+          - python-version: 3.10
+            django-version: "3.1"
     steps:
     - uses: actions/checkout@v2
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-
-    - name: Cache pip
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements/tests.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
     - name: Install dependencies
       run: |
-        pip install -r requirements/tests.txt
-        pip install coveralls
-
+        if [ "${{ matrix.python-version }}" == "3.7" ]; then
+          pip install -U importlib_metadata
+        fi
+        pip install tox
     - name: Run tests
-      run: nosetests --with-coverage --cover-erase --cover-package=temba_client
-
-    - name: Lint with flake8
-      run: flake8
-
-    - name: Coveralls
-      if: success()
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: coveralls
-
-  notify:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-    - name: Slack Notification
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ needs.build.result }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        TOXENV: py${{ matrix.python-version }}-django${{ matrix.django-version }}
+      run: |
+        echo "[testenv]" > tox.ini
+        echo "envlist = py{3.7,3.8,3.9,3.10}-django{1.11,2.0,2.1,2.2,3.0,3.1,3.2,4.0}" >> tox.ini
+        echo "[testenv:py${{ matrix.python-version }}-django${{ matrix.django-version }}]" >> tox.ini
+        echo "deps = django==${{ matrix.django-version }}" >> tox.ini
+        tox

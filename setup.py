@@ -1,53 +1,43 @@
-from setuptools import setup, find_packages
+import setuptools
 
-try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst', 'md')
-except ImportError:
-    print("Warning: pypandoc module not found, could not convert Markdown to RST")
-    long_description = open('README.md', 'r').read()
+with open("README.md", "r") as readme:
+    long_description = readme.read()
 
-
-def _is_requirement(line):
-    """Returns whether the line is a valid package requirement."""
-    line = line.strip()
-    return line and not (line.startswith("-r") or line.startswith("#"))
-
-
-def _read_requirements(filename):
-    """Returns a list of package requirements read from the file."""
-    requirements_file = open(filename).read()
-    return [line.strip() for line in requirements_file.splitlines()
-            if _is_requirement(line)]
-
-
-required_packages = _read_requirements("requirements/base.txt")
-test_packages = _read_requirements("requirements/tests.txt")
-
-setup(
-    name='rapidpro-python',
-    version=__import__('temba_client').__version__,
-    description='Python client library for the RapidPro',
+setuptools.setup(
+    name="django-uniauth",
+    version="1.4.1",
+    author="Lance Goodridge",
+    author_email="ldgoodridge95@gmail.com",
+    keywords=["django", "auth", "authentication", "cas", "sso", "single sign-on"],
+    description="A Django app for managing CAS and custom user authentication.",
+    include_package_data=True,
     long_description=long_description,
-
-    keywords='rapidpro client',
-    url='https://github.com/rapidpro',
-    license='BSD',
-
-    author='Nyaruka',
-    author_email='code@nyaruka.com',
-
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Libraries',
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 3',
+    long_description_content_type="text/markdown",
+    url="https://github.com/lgoodridge/django-uniauth",
+    license='LGPLv3',
+    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
+    install_requires=[
+        "Django>=1.11",
+        "python-cas>=1.4.0",
+        "djangorestframework-simplejwt>=4.1.0",
     ],
-
-    packages=find_packages(),
-    install_requires=required_packages,
-
-    test_suite='nose.collector',
-    tests_require=required_packages + test_packages,
+    extras_require = {
+        ":python_version<='3.2'": ["mock"],
+    },
+    packages=setuptools.find_packages(exclude=["demo-app",]),
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Framework :: Django",
+        "Framework :: Django :: 1.11",
+        "Framework :: Django :: 2",
+        "Framework :: Django :: 3",
+        "Framework :: Django :: 4",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 3",
+    ]
 )
