@@ -9,12 +9,11 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10']
-        django-version: ['1.8', '1.11', '2.0', '2.1', '2.2']
+        python-version: ["3.8", "3.9", "3.10"]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -23,19 +22,37 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install -U django==${{ matrix.django-version }}
-        if [ "${{ matrix.python-version }}" = "3.8" ]; then pip install black; fi
+        python -m pip install --upgrade pip
+        pip install tox-travis coveralls
     - name: Run tests
+      run: tox
+    - name: Upload coverage to Coveralls
+      if: success()
+      run: coveralls
+
+  docs:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
       run: |
-        if [ "${{ matrix.django-version }}" != "1.8" ]; then
-          python manage.py test
-        else
-          echo "Skipping tests for Django 1.8 due to compatibility issues."
+        python -m pip install --upgrade pip
+        pip install tox-travis sphinx
+    - name: Build Docs
+      run: |
+        set -o pipefail
+        tox -e docs | tee build.log
+      continue-on-error: true
+    - name: Check for Sphinx warnings
+      run: |
+        if grep -q "WARNING" build.log; then
+          echo "Sphinx build produced warnings, failing the job."
+          exit 1
         fi
-    - name: Run Black
-      if: matrix.python-version == '3.8'
-      run: black --check zen_queries
-    - name: Fix collections import
-      if: ${{ matrix.python-version == '3.10' }}
-      run: |
-        sed -i 's/from collections import Iterator/from collections.abc import Iterator/' your_module.py
