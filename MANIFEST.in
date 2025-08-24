@@ -1,2 +1,4 @@
-include README.md
-recursive-include django_inlinecss *.py
+include CHANGES.rst
+include COPYING
+include tests/*
+include bin/num2words
