@@ -1,25 +1,28 @@
-name: Node.js CI
+name: Python application
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, 3.10]
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
       with:
-        node-version: '14'
+        python-version: ${{ matrix.python-version }}
     - name: Install dependencies
-      run: npm install
-      working-directory: ./gpt_improve
+      run: pip install -r requirements-dev.txt
     - name: Run tests
-      run: npm test
-      working-directory: ./gpt_improve
+      run: python test_duo_openvpn.py
