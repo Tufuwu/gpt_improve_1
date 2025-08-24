@@ -1,21 +1,38 @@
-#!/usr/bin/env python
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-# implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import setuptools
+import os
+from setuptools import setup, find_packages
 
 
-setuptools.setup(
-    setup_requires=['pbr'],
-    pbr=True)
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+
+setup(
+    name='click-man',
+    version='0.4.2',
+    url='https://github.com/click-contrib/click-man',
+    license='MIT',
+    description='Generate man pages for click based CLI applications',
+    long_description=read('README.md'),
+    long_description_content_type='text/markdown',
+    author='Timo Furrer',
+    author_email='tuxtimo@gmail.com',
+    install_requires=[
+        'click',
+        'setuptools',
+    ],
+    packages=find_packages(exclude=('tests', )),
+    entry_points={
+        'console_scripts': [
+            'click-man = click_man.__main__:cli',
+        ]
+    },
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
+        'Topic :: Documentation',
+    ],
+)
