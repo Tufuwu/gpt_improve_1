@@ -1,161 +1,131 @@
-CHANGES
-=======
+### 3.0.0 2020-04-01
 
-Not yet released
-----------------
+* [ADDED] option `encryption_master_key_base64`
+* [DEPRECATED] option `encryption_master_key`
 
-* [feature] the toml format is now supported by niet (https://github.com/openuado/niet/pull/77)
-* [CI/CD] move away from travis CI and fix existing github actions
+* [REMOVED] old support for Push Notifications, see https://github.com/pusher/push-notifications-python
 
-3.0.0
------
+### 2.1.4 2019-08-09
 
-* [packaging] rewrite the way we package niet and move away from pbr
-* [doc] update the contribution guide
+* [FIXED] TypeError in AuthenticationClient when using encrypted channels
+* [FIXED] RequestsDependencyWarning by updating `requests`
+* [FIXED] Suppress httpretty warnings
+* [ADDED] Tests for AuthenticationClient with encrypted channels
 
-2.5.0
------
+### 2.1.3 2019-02-26
 
-* [fix] return key equal to False and 0 rather than raising an element not found (https://github.com/openuado/niet/issues/72)
-* [requirements] bump PyYAML from version 5.1 to version 5.4.1
-* [doc] improve documentation and error messages
+* Import Abstract Base Classes from collections.abc in Python versions >= 3.3
 
-2.4.0
------
+### 2.1.2 2019-01-02
 
-* fix changelog and integration badges
+* Fixes issue where encryption_master_key wasn't passed to NotificationClient to initialise the parent class.
 
-2.3.0
------
+### 2.1.1 2018-12-13
 
-* Adding a debug mode to niet
-* [doc] add more examples for the `comma` format
+* Add pynacl as a dependency
 
-2.2.0
------
+### 2.1.0 2018-12-13
 
-* [feature] adding the comma output format
-* [fix] improve alignement on the help's format
-* [fix] rename unit test module
+* Added End-to-end Encryption
+* Fix ability to pass options to Tornado Backend
 
-2.1.0
------
+### 2.0.2 2018-11-05
 
-* [feature] allow niet to work on web resources (distant JSON/YAML file)
+* Support Tornado 5, drop support for Tornado 4
+* Check for error responses with AsyncIO backend
 
-2.0
----
+### 2.0.1 2018-05-21
 
-* drop support of python 2.7
+* Fix issue where aiohttp ClientSession was not being closed
 
-1.8.2
------
+### 2.0.0 2018-05-03
 
-* fix use newline format on single value
-* add download badge
-* update changelog
+* Drop support for Python 2.6, 3.3
+* Drop support for Python 3.4 with the aiohttp adaptor
 
-1.8.1
------
+### 1.7.4 2018-02-05
 
-* fix infilename retrieve if input come from stdin
-* rename Changelog
-* Update Changelog
+* Properly close client after request in aiohttp adaptor
 
-1.8.0
------
+### 1.7.3 2018-01-24
 
-* [feat #11] Add in-place and output function to print output to a file
-* [fix #41] Remove future import
-* [doc #10] Add some usecases
-* [doc] Improve contributing guide to explain how to run it locally explicitly
-* update doc help and options
-* add features example
-* Introduce some examples with eval
+* Replace `read_and_close` with `text` in aiohttp adaptor (method removed
+  upstream)
 
-1.7.0
------
+### 1.7.2 2017-07-19
 
-* Introduce eval output
+* Remove `webhook_level` option to notify (depricated upstream)
 
-1.6.1
------
+* Increase notify timeout to 30s
 
-* fix json examples structure
+### 1.7.1 2017-06-12
 
-1.6.0
------
+* Make python 2 and 3 support explicit in `setup.py`
 
-* Handle jmespath lexer errors with path which contains dash
-* Disable python3.8 tests on travis
-* Support of python 3.8
-* remove testing of python 3.5 and 3.6 development versions
-* update changelog
+* Lift trigger channel limit to 100 for consistency with API
 
-1.5.1
------
+### 1.7.0 2017-05-12
 
-* Fix JSON issue when content start with a list
-* compatibility with python3.7
-* transfer project to openuado organization
-* Introduce search by using xpath syntax
-* move from devel branch to master branch as the default branch
+* Remove version freeze from urllib3 since upstream bugfix has been released. (See [here](https://github.com/shazow/urllib3/pull/987).)
 
-1.4.2
------
+### 1.6.0 1016-10-26
 
-* fix license typo
+* Path to cacert.pem has been added to the setup.py, resolving an oversight that led to errors upon SSL requests.
+* Internal changes to ease future maintenance.
 
-1.4.1
------
+### 1.5.0 2016-08-23
 
-* Fixing list of dict extract
-* fix pbr setup requirements
+* Add support for publishing push notifications on up to 10 interests.
 
-1.4.0
------
+### 1.4.0 2016-08-15
 
-* Update Changelog and fix travis automatic deployment
-* get the niet version number
-* document silent mode
-* allow to use silent mode and doesn't display element not found
-* Remove duplicate actions
-* Explain how to use bandit to contributors
-* Scan project code with bandit during CI
+* Add support for sending push notifications.
 
-1.3.0
------
+### 1.3.0 2016-05-24
 
-* update changelog
-* read data from stdin or from file (#25)
-* introduce unittest (#7)
-* improve documentation and add more examples and fix (#8)
-* improve contributing
-* Update changelog and authors
-* Add possibility to begin search string by a point eg: .project
-* Improve multiples output functionnality
-* make adequation between examples in doc and functionnal tests
-* Add yaml and json output format
-* remove python 3.3 support
-* Feat. Add capacity to choose between quotes or not
-* fix pep8 and check pep8 on travis
-* [feat] Add capability to get the whole file using "." as object filter
-* Minor cosmetics changes
-* doc explain how to update niet
-* update changelog
-* deploy to test.pypi.org on devel
-* add some classifiers and change author email
-* add badges and improve documentation
-* introduce pipenv and pipfile
-* add gitignore rules
-* introduce tests
-* how to contribute to niet
-* Introduce code of conduct
-* License MIT
-* remove changelog from pypi description
-* fix bad behavior that still to occur on not found
-* fix bad behavior on element not found
-* fix documentation examples
-* remove tick from list results
-* using readme at markdown format on pypi
-* First commit
+* Add support for batch events
+
+### 1.2.3 2015-06-22
+
+* Fixes sharing default mutable argument between requests
+* Only load RequestsBackend when required (avoids issues on GAE)
+
+### 1.2.2 2015-06-12
+
+Added Wheel file publishing. No functional changes.
+
+### 1.2.1 2015-06-03
+
+Added cacert.pem to the package, getting rid of errors upon SSL calls.
+
+### 1.2.0 2015-05-29
+
+* Renamed `URLFetchBackend` to `GAEBackend`, which specifically imports the Google App Engine urlfetch library.
+* Library creates an SSL context from certificate, addressing users receiving `InsecurePlatformWarning`s.
+
+### 1.1.3 2015-05-12
+
+Tightened up socket_id validation regex.
+
+### 1.1.2 2015-05-08
+
+Fixed oversight in socket_id validation regex.
+
+### 1.1.1 2015-05-08
+
+* Library now validates `socket_id` for the `trigger` method.
+
+### 1.1.0 2015-05-07
+
+* User can now specify a custom JSON encoder or decoder upon initializing Pusher.
+
+### 1.0.0 2015-04-25
+
+* Python 2.6, 2.7 and 3.3 support
+* Adapters for various http libraries like requests, urlfetch, aiohttp and tornado.
+* WebHook validation
+* Signature generation for socket subscriptions
+
+### 0.1.0 2014-09-01
+
+* First release

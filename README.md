@@ -1,837 +1,428 @@
-# niet
+# Pusher Channels HTTP Python Library
 
-![Build](https://github.com/openuado/niet/actions/workflows/python-app.yml/badge.svg)
-![PyPI](https://img.shields.io/pypi/v/niet.svg)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/niet.svg)
-![PyPI - Status](https://img.shields.io/pypi/status/niet.svg)
-[![Downloads](https://pepy.tech/badge/niet)](https://pepy.tech/project/niet)
-[![Downloads](https://pepy.tech/badge/niet/month)](https://pepy.tech/project/niet/month)
+[![Build Status](https://travis-ci.org/pusher/pusher-http-python.svg?branch=master)](https://travis-ci.org/pusher/pusher-http-python)
 
-Get data from YAML, JSON, and TOML file directly in your shell.
+This package lets you trigger events to your client and query the state of your channels. When used with a server, you can validate webhooks and authenticate `private-` or `presence-` channels.
 
----
+In order to use this library, you need to have a free account on <http://pusher.com>. After registering, you will need the application credentials for your app.
 
-> How to easily parse and retrieve data from YAML file in our shell?
+## Supported Platforms
 
-The previous question, few years ago, led us to the development of niet.
+* Python - supports Python versions 2.7, 3.6, 3.7 and 3.8
 
-Indeed, at that time, we needed a way to store and retrieve data for our own
-needs. We created niet to read those data. The goal was to develop a tools
-that will allow us to standardize how we parse YAML locally or in our CI
-pipelines. We wanted something reusable and easily distribuable. Niet was born.
+## Features
 
-Over the years niet evolved to introduce the support of other formats like
-TOML.
+* Adapters for various http libraries like requests, urlfetch, aiohttp (requires Python >= 3.5.3) and tornado.
+* WebHook validation
+* Signature generation for socket subscriptions
 
-Niet is like [xmllint](http://xmlsoft.org/xmllint.html) or
-[jq](https://stedolan.github.io/jq/) but for YAML, JSON and TOML data -
-you can use it to slice and filter and map and transform structured data.
+### Table of Contents
 
-You can easily retrieve data by using simple expressions or using
-xpath advanced features to access non-trivial data.
+- [Installation](#installation)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
+- [Triggering Events](#triggering-events)
+- [Querying Application State](#querying-application-state)
+  - [Getting Information For All Channels](#getting-information-for-all-channels)
+  - [Getting Information For A Specific Channel](#getting-information-for-a-specific-channel)
+  - [Getting User Information For A Presence Channel](#getting-user-information-for-a-presence-channel)
+- [Authenticating Channel Subscription](#authenticating-channel-subscription)
+- [End-to-end Encryption](#end-to-end-encryption)
+- [Receiving Webhooks](#receiving-webhooks)
+- [Request Library Configuration](#request-library-configuration)
+  - [Google App Engine](#google-app-engine)
+- [Feature Support](#feature-support)
+- [Running the tests](#running-the-tests)
+- [License](#license)
 
-You can easily convert YAML format into JSON, or TOML formats and vice versa.
+## Installation
 
-Niet is writen in Python so you can install it from a package manager (from
-PyPi) or directly by cloning this repository - no specific system rights are
-needed to install it.
+You can install this module using your package management method or choice,
+normally `easy_install` or `pip`. For example:
 
-## Main Features
-- Extract elements by using xpath syntax
-- Extract values from JSON format
-- Extract values from YAML format
-- Extract values from TOML format
-- Automaticaly detect format (json/yaml)
-- Read data from a web resource
-- Read data from file or pass data from stdin
-- Format output values
-- Format output to be reused by shell `eval`
-- Convert YAML to JSON, or TOML
-- Convert JSON to YAML, or TOML
-- Convert TOML to YAML, or JSON
+```bash
+pip install pusher
+```
 
-## Install or Update niet
+Users on Python 2.x and older versions of pip may get a warning, due to pip compiling the optional `pusher.aiohttp` module, which uses Python 3 syntax. However, as `pusher.aiohttp` is not used by default, this does not affect the library's functionality. See [our Github issue](https://github.com/pusher/pusher-http-python/issues/52), as well as [this issue from Gunicorn](https://github.com/benoitc/gunicorn/issues/788) for more details.
+
+On Linux, you must ensure that OpenSSL is installed, e.g. on Debian/Ubuntu:
 
 ```sh
-$ pip install -U niet
+$ sudo apt-get install build-essential libssl-dev libffi-dev
 ```
 
-## Requirements
+## Getting started
 
-- Python 3.9 or higher
+ The minimum configuration required to use the `Pusher` object are the three
+constructor arguments which identify your Pusher Channels app. You can find them by
+going to "API Keys" on your app at <https://app.pusher.com>.
 
-## Supported versions
-
-Since niet 2.0 the support of python 2.7 have been dropped so if
-if you only have python 2.7 at hands then you can use previous version (lower
-to 2.0) but you should consider first that no support will be given on
-these versions (no bugfix, no new feature, etc). If you report an issue or
-or propose a new feature then they will be addressed only for current or
-higher version.
-
-## Usage
-
-### Help and options
-
-```shell
-$ niet --help
-usage: niet [-h] [-f {json,yaml,toml,eval,newline,ifs,squote,dquote,comma}] [-s] [-v]
-            object [file]
-
-Read data from YAML or JSON file
-
-positional arguments:
-  object                Path to object separated by dot (.). Use '.' to get
-                        whole file. eg: a.b.c
-  file                  Optional JSON or YAML filename. If not provided niet
-                        read from stdin
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -f {json,yaml,toml,eval,newline,ifs,squote,dquote,comma}, --format {json,yaml,toml,eval,newline,ifs,squote,dquote,comma}
-                        output format
-  -i, --in-place        Perform modification in place. Will so alter read file
-  -o OUTPUT_FILE, --output OUTPUT_FILE
-                        Print output in a file instead of stdout (surcharged
-                        by infile parameter if set)
-  -s, --silent          silent mode, doesn't display message when element was
-                        not found
-  -v, --version         print the Niet version number and exit (also
-                        --version)
-  --debug               Activate the debug mode (based on pdb)
-
-output formats:
-  json          Return object in JSON
-  yaml          Return object in YAML
-  toml          Return object in TOML
-  eval          Return result in a string evaluable by a shell eval command as an input
-  newline       Return all elements of a list in a new line
-  ifs           Return all elements of a list separated by IFS env var
-  squote        Add single quotes to result
-  dquote        Add double quotes to result
-  comma         Return all elements separated by commas
+```python
+import pusher
+pusher_client = pusher.Pusher(app_id=u'4', key=u'key', secret=u'secret', cluster=u'cluster')
 ```
 
-### With Json from stdin
+You can then trigger events to channels. Channel and event names may only
+contain alphanumeric characters, `-` and `_`:
 
-```shell
-$ echo '{"foo": "bar", "fizz": {"buzz": ["1", "2", "Fizz", "4", "Buzz"]}}' | niet fizz.buzz
-1
-2
-Fizz
-4
-Buzz
-$ echo '{"foo": "bar", "fizz": {"buzz": ["1", "2", "Fizz", "4", "Buzz"]}}' | niet fizz.buzz -f squote
-'1' '2''Fizz' '4' 'Buzz'
-$ echo '{"foo": "bar", "fizz": {"buzz": ["1", "2", "fizz", "4", "buzz"]}}' | niet . -f yaml
-fizz:
-  buzz:
-  - '1'
-  - '2'
-  - fizz
-  - '4'
-  - buzz
-foo: bar
-$ echo '{"foo": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet "fizz.buzz[2]"
-two
-$ echo '{"foo": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet -f dquote "fizz.buzz[0:2]"
-"zero" "one"
-$ echo '{"foo": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet -f dquote "fizz.buzz[:3]"
-"zero" "one" "two"
-
+```python
+pusher_client.trigger(u'a_channel', u'an_event', {u'some': u'data'})
 ```
 
-### With YAML file
+## Configuration
 
-Consider the yaml file with the following content:
-```yaml
-# /path/to/your/file.yaml
-project:
-    meta:
-        name: my-project
-    foo: bar
-    list:
-        - item1
-        - item2
-        - item3
-    test-dash: value
+```python
+import pusher
+pusher_client = pusher.Pusher(app_id, key, secret, cluster=u'cluster')
 ```
 
-You can [download the previous example](https://gist.githubusercontent.com/4383/53e1599663b369f499aa28e27009f2cd/raw/389b82c19499b8cb84a464784e9c79aa25d3a9d3/file.yaml) locally for testing purpose or use the command line for this:
-```shell
-wget https://gist.githubusercontent.com/4383/53e1599663b369f499aa28e27009f2cd/raw/389b82c19499b8cb84a464784e9c79aa25d3a9d3/file.yaml
+|Argument   |Description   |
+|:-:|:-:|
+|app_id `String`  |**Required** <br> The Pusher Channels application ID |
+|key `String`     |**Required** <br> The Pusher Channels application key |
+|secret `String`  |**Required** <br> The Pusher Channels application secret token |
+|cluster `String` | **Default:`mt1`** <br> The pusher application cluster. Will be overwritten if `host` is set |
+|host `String`    | **Default:`None`** <br> The host to connect to |
+|port `int`       | **Default:`None`** <br>Which port to connect to |
+|ssl `bool`       | **Default:`True`** <br> Use HTTPS |
+|~~encryption_master_key~~ `String` | **Default:`None`** <br> *Deprecated*, see `encryption_master_key_base64` |
+|encryption_master_key_base64 `String` | **Default:`None`** <br> The encryption master key for End-to-end Encryption |
+|backend `Object` | an object that responds to the `send_request(request)` method. If none is provided, a `pusher.requests.RequestsBackend` instance is created. |
+|json_encoder `Object` | **Default: `None`**<br> Custom JSON encoder. |
+|json_decoder `Object` | **Default: `None`**<br> Custom JSON decoder.
+
+The constructor will throw a `TypeError` if it is called with parameters that don’t match the types listed above.
+
+##### Example
+
+```py
+import pusher
+pusher_client = pusher.Pusher(app_id=u'4', key=u'key', secret=u'secret', ssl=True, cluster=u'cluster')
 ```
 
-You can retrieve data from this file by using niet like this:
-```sh
-$ niet ".project.meta.name" /path/to/your/file.yaml
-my-project
-$ niet ".project.foo" /path/to/your/file.yaml
-bar
-$ niet ".project.list" /path/to/your/file.yaml
-item1 item2 item3
-$ # assign return value to shell variable
-$ NAME=$(niet ".project.meta.name" /path/to/your/file.yaml)
-$ echo $NAME
-my-project
-$ niet project.'"test-dash"' /path/to/your/file.json
-value
+## Triggering Events
+
+To trigger an event on one or more channels, use the `trigger` method on the `Pusher` object.
+
+#### `Pusher::trigger`
+
+|Argument   |Description   |
+|:-:|:-:|
+|channels `String` or `Collection`   |**Required** <br> The name or list of names of the channel you wish to trigger events on   |
+|event `String`| **Required** <br> The name of the event you wish to trigger. |
+|data `JSONable data` | **Required** <br> The event's payload |
+|socket_id `String` | **Default:`None`** <br> The socket_id of the connection you wish to exclude from receiving the event. You can read more [here](http://pusher.com/docs/duplicates). |
+
+|Return Values   |Description   |
+|:-:|:-:|
+|buffered_events `Dict`   | A parsed response that includes the event_id for each event published to a channel. See example.   |
+
+`Pusher::trigger` will throw a `TypeError` if called with parameters of the wrong type; or a `ValueError` if called on more than 100 channels, with an event name longer than 200 characters, or with more than 10240 characters of data (post JSON serialisation).
+
+##### Example
+
+This call will trigger to `'a_channel'` and `'another_channel'`, and exclude the recipient with socket_id `"1234.12"`.
+
+```python
+pusher_client.trigger([u'a_channel', u'another_channel'], u'an_event', {u'some': u'data'}, "1234.12")
 ```
 
-### With JSON file
+#### `Pusher::trigger_batch`
 
-Consider the json file with the following content:
-```json
-{
-    "project": {
-        "meta": {
-            "name": "my-project"
-        },
-        "foo": "bar",
-        "list": [
-            "item1",
-            "item2",
-            "item3"
-        ],
-        "test-dash": "value"
+It's also possible to send distinct messages in batches to limit the overhead
+of HTTP headers. There is a current limit of 10 events per batch on
+our multi-tenant clusters.
+
+|Argument   |Description   |
+|:-:|:-:|
+|batch `Array` of `Dict`  |**Required** <br> A list of events to trigger   |
+
+Events are a `Dict` with keys:
+
+|Argument   |Description   |
+|:-:|:-:|
+|channel `String`| **Required** <br> The name of the channel to publish to. |
+|name `String`| **Required** <br> The name of the event you wish to trigger. |
+|data `JSONable data` | **Required** <br> The event's payload |
+|socket_id `String` | **Default:`None`** <br> The socket_id of the connection you wish to exclude from receiving the event. You can read more [here](http://pusher.com/docs/duplicates). |
+
+|Return Values   |Description   |
+|:-:|:-:|
+|`Dict`| An empty dict on success |
+
+`Pusher::trigger_batch` will throw a `TypeError` if the data parameter is not JSONable.
+
+##### Example
+
+```python
+pusher_client.trigger_batch([
+  { u'channel': u'a_channel', u'name': u'an_event', u'data': {u'some': u'data'}, u'socket_id': '1234.12'},
+  { u'channel': u'a_channel', u'name': u'an_event', u'data': {u'some': u'other data'}}
+])
+```
+
+## Querying Application State
+
+### Getting Information For All Channels
+
+
+#### `Pusher::channels_info`
+
+|Argument   |Description |
+|:-:|:-:|
+|prefix_filter `String`  |**Default: `None`** <br> Filter the channels returned by their prefix   |
+|attributes `Collection` | **Default: `[]`** <br> A collection of attributes which should be returned for each channel. If empty, an empty dictionary of attributes will be returned for each channel. <br> Available attributes: `"user_count"`.
+
+|Return Values   |Description   |
+|:-:|:-:|
+|channels `Dict`   | A parsed response from the HTTP API. See example.   |
+
+`Pusher::channels_info` will throw a `TypeError` if `prefix_filter` is not a `String`.
+
+##### Example
+
+```python
+channels = pusher_client.channels_info(u"presence-", [u'user_count'])
+
+#=> {u'channels': {u'presence-chatroom': {u'user_count': 2}, u'presence-notifications': {u'user_count': 1}}}
+```
+
+### Getting Information For A Specific Channel
+
+#### `Pusher::channel_info`
+
+|Argument   |Description   |
+|:-:|:-:|
+|channel `String`  |**Required** <br> The name of the channel you wish to query|
+|attributes `Collection` | **Default: `[]`** <br> A collection of attributes to be returned for the channel. <br><br> Available attributes: <br> `"user_count"` : Number of *distinct* users currently subscribed. **Applicable only to presence channels**. <br> `"subscription_count"`: [BETA]: Number of *connections* currently subscribed to the channel. Please [contact us](http://support.pusher.com) to enable this feature.
+
+|Return Values   |Description   |
+|:-:|:-:|
+|channel `Dict`   |  A parsed response from the HTTP API. See example.  |
+
+`Pusher::channel_info` will throw a `ValueError` if `channel` is not a valid channel.
+
+##### Example
+
+```python
+channel = pusher_client.channel_info(u'presence-chatroom', [u"user_count"])
+#=> {u'user_count': 42, u'occupied': True}
+```
+
+### Getting User Information For A Presence Channel
+
+#### `Pusher::users_info`
+
+|Argument   |Description   |
+|:-:|:-:|
+|channel `String`   |**Required** <br> The name of the *presence* channel you wish to query   |
+
+|Return Values   |Description   |
+|:-:|:-:|
+|users `Dict`   | A parsed response from the HTTP API. See example.   |
+
+`Pusher::users_info` will throw a `ValueError` if `channel` is not a valid channel.
+
+##### Example
+
+```python
+pusher_client.users_info(u'presence-chatroom')
+#=> {u'users': [{u'id': u'1035'}, {u'id': u'4821'}]}
+```
+
+## Authenticating Channel Subscription
+
+#### `Pusher::authenticate`
+
+In order for users to subscribe to a private- or presence-channel, they must be authenticated by your server.
+
+The client will make a POST request to an endpoint (either "/pusher/auth" or any which you specify) with a body consisting of the channel's name and socket_id.
+
+Using your `Pusher` instance, with which you initialized `Pusher`, you can generate an authentication signature. Having responded to the request with this signature, the subscription will be authenticated.
+
+|Argument   |Description   |
+|:-:|:-:|
+|channel `String`   |**Required**<br> The name of the channel, sent to you in the POST request    |
+|socket_id `String` | **Required**<br> The channel's socket_id, also sent to you in the POST request |
+|custom_data `Dict` |**Required for presence channels** <br> This will be a dictionary containing the data you want associated with a member of a presence channel. A `"user_id"` key is *required*, and you can optionally pass in a `"user_info"` key. See the example below.  |
+
+|Return Values   |Description   |
+|:-:|:-:|
+|response `Dict`   | A dictionary to send as a response to the authentication request.|
+
+`Pusher::authenticate` will throw a `ValueError` if the `channel` or `socket_id` that it’s called with are invalid.
+
+##### Example
+
+###### Private Channels
+
+```python
+auth = pusher_client.authenticate(
+
+  channel=u"private-channel",
+
+  socket_id=u"1234.12"
+)
+# return `auth` as a response
+```
+
+###### Presence Channels
+
+```python
+auth = pusher_client.authenticate(
+
+  channel=u"presence-channel",
+
+  socket_id=u"1234.12",
+
+  custom_data={
+    u'user_id': u'1',
+    u'user_info': {
+      u'twitter': '@pusher'
     }
-}
-```
-
-You can [download the previous example](https://gist.githubusercontent.com/4383/1bab8973474625de738f5f6471894322/raw/0048cd2310df2d98bf4f230ffe20da8fa615cef3/file.json) locally for testing purpose or use the command line for this:
-```shell
-wget https://gist.githubusercontent.com/4383/1bab8973474625de738f5f6471894322/raw/0048cd2310df2d98bf4f230ffe20da8fa615cef3/file.json
-```
-
-You can retrieve data from this file by using niet like this:
-```sh
-$ niet "project.meta.name" /path/to/your/file.json
-my-project
-$ niet "project.foo" /path/to/your/file.json
-bar
-$ niet "project.list" /path/to/your/file.json
-item1 item2 item3
-$ # assign return value to shell variable
-$ NAME=$(niet "project.meta.name" /path/to/your/file.json)
-$ echo $NAME
-my-project
-$ niet project.'"test-dash"' /path/to/your/file.json
-value
-```
-
-### Object Identifiers
-
-An identifier is the most basic expression and can be used to extract a single
-element from a JSON/YAML document. The return value for an identifier is
-the value associated with the identifier. If the identifier does not
-exist in the JSON/YAML document, than niet display a specific message and
-return the error code `1`, example:
-
-```sh
-$ echo '{"foo": "bar", "fizz": {"buzz": ["1", "2", "3"]}}' | niet fizz.gogo
-Element not found: fizz.gogo
-$ echo $?
-1
-```
-
-See the [related section](#deal-with-errors) for more info on how to manage
-errors with `niet`.
-
-Niet is based on `jmespath` to find results so for complex research you can
-refer to the [jmespath specifications](http://jmespath.org/specification.html#identifiers)
-to use identifiers properly.
-
-If you try to search for an identifier who use some dash you need to surround
-your research expression with simple and double quotes, examples:
-
-```sh
-$ echo '{"foo-biz": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet -f dquote '"foo-biz"'
-bar
-$ echo '{"key-test": "value"}' | niet '"key-test"'
-value
-```
-
-However, `niet` will detect related issues and surround automatically your
-identifier if `jmespath` fail to handle it.
-
-Hence, the following examples will return similar results than the previous
-examples:
-
-```sh
-$ echo '{"foo-biz": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet -f dquote foo-biz
-bar
-$ echo '{"key-test": "value"}' | niet key-test
-value
-```
-
-If your object is not at the root of your path, an example is available in
-`tests/sample/sample.json`, then you need to only surround the researched
-identifier like this `project.'"test-dash"'`
-
-```json
-{
-    "project": {
-        "meta": {
-            "name": "my-project"
-        },
-        "foo": "bar",
-        "list": [
-            "item1",
-            "item2",
-            "item3"
-        ],
-        "test-dash": "value"
-    }
-}
-
-```
-
-Example:
-```sh
-niet project.'"test-dash"' tests/sample/sample.json
-```
-
-Further examples with [`jmespath` identifiers](http://jmespath.org/specification.html#examples).
-
-### Output
-
-#### Stdout
-By default, niet print the output on stdout.
-
-#### Save output to a file
-It if possible to pass a filename using -o or --output argument to writes
-directly in a file. This file will be created if not exists or will be
-replaced if already exists.
-
-#### In-file modification
-It is possible to modify directly a file using -i or --in-place argument. This will replace
-the input file by the output of niet command. This can be used to extract some data of a file or
-reindent a file.
-
-### Output formats
-You can change the output format using the -f or --format optional
-argument.
-
-By default, niet detect the input format and display complex objects
-in the same format. If the object is a list or a value, newline output
-format will be used.
-
-Output formats are:
-  - ifs
-  - squote
-  - dquote
-  - newline
-  - yaml
-  - json
-  - toml
-
-#### ifs
-Ifs output format print all values of a list or a single value in one line.
-All values are separated by the content of IFS environment variable if defined,
-space otherwise.
-
-Examples (consider the previous [YAML file example](#with-yaml-file)):
-```shell
-$ IFS="|" niet .project.list /path/to/your/file.yaml -f ifs
-item1|item2|item3
-$ IFS=" " niet .project.list /path/to/your/file.yaml -f ifs
-item1 item2 item3
-$ IFS="@" niet .project.list /path/to/your/file.yaml -f ifs
-item1@item2@item3
-```
-
-This is usefull in a shell for loop,
-but your content must, of course, don't contain IFS value:
-```shell
-OIFS="$IFS"
-IFS="|"
-for i in $(niet .project.list /path/to/your/file.yaml -f ifs); do
-    echo ${i}
-done
-IFS="${OIFS}"
-```
-
-Previous example provide the following output:
-```sh
-item1
-item2
-item3
-```
-
-For single quoted see [squote](#squote) ouput or [dquote](#dquote) double quoted output with IFS
-
-#### squote
-Squotes output format print all values of a list or a single value in one line.
-All values are quoted with single quotes and are separated by IFS value.
-
-Examples (consider the previous [YAML file example](#with-yaml-file)):
-```shell
-$ # With the default IFS
-$ niet .project.list /path/to/your/file.yaml -f squote
-'item1' 'item2' 'item3'
-$ # With a specified IFS
-$ IFS="|" niet .project.list /path/to/your/file.yaml -f squote
-'item1'|'item2'|'item3'
-```
-
-#### dquote
-Dquotes output format print all values of a list or a single value in one line.
-All values are quoted with a double quotes and are separated by IFS value.
-
-Examples (consider the previous [YAML file example](#with-yaml-file)):
-```shell
-$ # With the default IFS
-$ niet .project.list /path/to/your/file.yaml -f dquote
-'item1' 'item2' 'item3'
-$ # With a specified IFS
-$ IFS="|" niet .project.list /path/to/your/file.yaml -f dquote
-"item1"|"item2"|"item3"
-```
-
-#### newline
-
-`newline` output format print one value of a list or a single value per line.
-
-The `newline` format is mostly usefull with shell while read loops and
-with script interactions.
-
-Example:
-```sh
-while read value: do
-    echo $value
-done < $(niet --format newline project.list your-file.json)
-```
-
-#### comma
-
-`comma` output format print results on the same line and separated by commas.
-
-The `comma` format allow you to format your outputs to consume your results
-with other commands lines interfaces. By example some argument parser
-allow you to pass multi values for the same parameter (the
-[beagle command](https://beagle-hound.readthedocs.io/en/latest/) per
-example allow you to
-[repeat the `--repo` option](https://beagle-hound.readthedocs.io/en/latest/cli/index.html#cmdoption-beagle-search-repo)).
-
-Example of integration with beagle and shell:
-
-```sh
-$ OSLO_PROJECTS_URL=https://raw.githubusercontent.com/openstack/governance/master/reference/projects.yaml
-$ beagle search \
-    -f link \
-    --repo $(niet "oslo.deliverables.*.repos[0]" ${OSLO_PROJECTS_URL} -f comma) 'venv'
-```
-
-The previous command will return all the links of files
-who contains `venv` on the openstack oslo's scope of projects (pbr,
-taskflow, oslo.messaging, etc).
-
-Else another with a more reduced scope on openstack oslo's projects:
-
-```sh
-$ niet "oslo.deliverables.*.repos[0][?contains(@, \`oslo\`) == \`true\`]" \
-    https://raw.githubusercontent.com/openstack/governance/master/reference/projects.yaml \
-    -f comma
-openstack/oslo-cookiecutter,openstack/oslo-specs,openstack/oslo.cache,
-openstack/oslo.concurrency,openstack/oslo.config,openstack/oslo.context,
-openstack/oslo.db,openstack/oslo.i18n,openstack/oslo.limit,openstack/oslo.log,
-openstack/oslo.messaging,openstack/oslo.middleware,
-openstack/oslo.policy,openstack/oslo.privsep,openstack/oslo.reports,
-openstack/oslo.rootwrap,openstack/oslo.serialization,openstack/oslo.service,
-openstack/oslo.tools,openstack/oslo.upgradecheck,openstack/oslo.utils,
-openstack/oslo.versionedobjects,openstack/oslo.vmware,openstack/oslotest
-```
-
-In the previous example we retrieve only the projects repos who contains
-`oslo` in their names, so other projects like `taskflow`, `pbr`, etc will
-be ignored.
-
-#### eval
-
-Eval output format allow you to eval output string to initialize shell
-variable generated from your JSON/YAML content.
-
-You can intialize shell variables from your entire content, example:
-
-```sh
-$ echo '{"foo-biz": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet -f eval .
- foo_biz="bar";fizz__buzz=( zero one two three )
-$ eval $(echo '{"foo-biz": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet -f eval .)
-$ echo ${foo_biz}
-bar
-$ echo ${fizz__buzz}
-zero one two three
-$ eval $(echo '{"foo-biz": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet -f eval '"foo-biz"'); echo ${foo_biz}
-bar
-$ echo '{"foo-biz": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet -f eval fizz.buzz
-fizz_buzz=( zero one two three );
-```
-
-Parent elements are separated by `__` by example the `fizz.buzz` element
-will be represented by a variable named `fizz__buzz`. You need to consider
-that when you call your expected variables.
-
-Also you can initialize some shell array from your content and loop over in
-a shell maner:
-
-```sh
-$ eval $(echo '{"foo-biz": "bar", "fizz": {"buzz": ["zero", "one", "two", "three"]}}' | niet -f eval fizz.buzz)
-$ for el in ${fizz_buzz}; do echo $el; done
-zero
-one
-two
-three
-```
-
-#### yaml
-YAML output format force output to be in YAML regardless the input file format.
-
-#### json
-JSON output format force output to be in JSON regardless the input file format.
-
-#### toml
-TOML output format force output to be in TOML regardless the input file format.
-
-### Read data from a web resource
-
-Niet allow you to read data (json/yaml/toml) from a web resource accessible by
-using the HTTP protocole (introduced in niet 2.1).
-
-This can be done by passing an url to niet which refer to a raw content (json,
-yaml, or toml).
-
-Here is some examples with the [openstack governance's projects data](https://github.com/openstack/governance/blob/master/reference/projects.yaml):
-
-```sh
-$ # List all the oslo projects repos (https://wiki.openstack.org/wiki/Oslo)
-$ niet "oslo.deliverables.*.repos[0]" \
-    https://raw.githubusercontent.com/openstack/governance/master/reference/projects.yaml
-openstack/automaton
-openstack/castellan
-...
-openstack/debtcollector
-...
-openstack/futurist
-openstack/oslo.cache
-openstack/oslo.concurrency
-openstack/oslo.config
-openstack/oslo.context
-openstack/oslo.db
-openstack/oslo.i18n
-openstack/oslo.limit
-openstack/oslo.log
-openstack/oslo.messaging
-openstack/oslo.middleware
-openstack/oslo.policy
-...
-openstack/oslo.service
-openstack/osprofiler
-openstack/pbr
-...
-openstack/stevedore
-openstack/taskflow
-openstack/tooz
-openstack/whereto
-$ niet oslo.service \
-    https://raw.githubusercontent.com/openstack/governance/master/reference/projects.yaml
-Common libraries
-$ # Get the openstack oslo's mission
-$ niet oslo.mission \
-    https://raw.githubusercontent.com/openstack/governance/master/reference/projects.yaml
-To produce a set of python libraries containing code shared by OpenStack projects.
-The APIs provided by these libraries should be high quality, stable, consistent,
-documented and generally applicable.
-$ eval $(niet oslo.service \
-    https://raw.githubusercontent.com/openstack/governance/master/reference/projects.yaml -f eval) && \
-    test "${oslo_service}" = "Common libraries"
-$ # Get the name of the oslo PTL
-$ eval $(niet oslo.ptl.name \
-    https://raw.githubusercontent.com/openstack/governance/master/reference/projects.yaml -f eval)
-$ echo "${oslo_ptl_name}" # now display your evaluated result
-$ # Convert original distant yaml file into json
-$ niet . https://raw.githubusercontent.com/openstack/governance/master/reference/projects.yaml -f json
-```
-
-For further examples of filters and selections please take a look to
-[the jmespath's doc](https://jmespath.org/examples.html).
-
-### Result not found
-
-By default when no results was found niet display a specific message and return
-the error code `1`, example:
-```sh
-$ echo '{"foo": "bar", "fizz": {"buzz": ["1", "2", "3"]}}' | niet fizz.gogo
-Element not found: fizz.gogo
-$ echo $?
-1
-```
-
-You can avoid this behavior by passing niet into a silent mode.
-
-Silent mode allow you to hide the specific message error but continue to return
-a status code equal to `1` when the key was not found.
-
-You can use the silent mode by using the flag `-s/--silent`, example:
-```sh
-$ echo '{"foo": "bar", "fizz": {"buzz": ["1", "2", "3"]}}' | niet fizz.gogo -s
-$ echo $?
-1
-```
-
-### Deal with errors
-
-When your JSON file content are not valid niet display an error and exit
-with return code `1`
-
-You can easily protect your script like this:
-```sh
-PROJECT_NAME=$(niet project.meta.name your-file.yaml)
-if [ "$?" = "1" ]; then
-    echo "Error occur ${PROJECT_NAME}"
-else
-    echo "Project name: ${PROJECT_NAME}"
-fi
-```
-
-## Examples
-
-You can try niet by using the samples provided with the project sources code.
-
-> All the following examples use the sample file available in niet sources code
-at the following location `tests/samples/sample.yaml`.
-
-Sample example:
-```yaml
-# tests/samples/sample.yaml
-project:
-    meta:
-        name: my-project
-    foo: bar
-    list:
-        - item1
-        - item2
-        - item3
-```
-
-### Extract a single value
-
-Retrieve the project name:
-```sh
-$ niet project.meta.name tests/samples/sample.yaml
-my-project
-```
-
-### Complexe search
-
-Consider the following content:
-
-```
-$ cat /var/lib/libvirt/dnsmasq/virbr0.status
-[
-  {
-    "ip-address": "192.168.122.113",
-    "mac-address": "52:54:00:91:14:02",
-    "hostname": "rhel79",
-    "expiry-time": 1644251254
-  },
-  {
-    "ip-address": "192.168.122.162",
-    "mac-address": "52:54:00:23:37:ed",
-    "hostname": "satellite",
-    "expiry-time": 1644251837
   }
-]
+)
+# return `auth` as a response
 ```
 
-Here we want to retrieve the value of the ip-address field when the hostname
-is equal to `satellite`. The following command will allow you to get this
-value:
+## End to End Encryption
 
-```sh
-$ sed 's/ip/_/g' /var/lib/libvirt/dnsmasq/virbr0.status | niet "[?hostname=='satellite'].ip"
-192.168.122.162
+This library supports end to end encryption of your private channels. This
+means that only you and your connected clients will be able to read your
+messages. Pusher cannot decrypt them. You can enable this feature by following
+these steps:
+
+1. You should first set up Private channels. This involves [creating an
+   authentication endpoint on your
+   server](https://pusher.com/docs/authenticating_users).
+
+2. Next, generate a 32 byte master encryption key, base64 encode it and store
+   it securely.
+
+   This is secret and you should never share this with anyone. Not even Pusher.
+
+   To generate a suitable key from a secure random source, you could use:
+
+   ```bash
+   openssl rand -base64 32
+   ```
+
+3. Pass your master key to the SDK constructor
+
+   ```python
+   import pusher
+
+   pusher_client = pusher.Pusher(
+     app_id='yourappid',
+     key='yourkey',
+     secret='yoursecret',
+     encryption_master_key_base64='<output from command above>',
+     cluster='yourclustername',
+     ssl=True
+   )
+
+   pusher_client.trigger('private-encrypted-my-channel', 'my-event', {
+     'message': 'hello world'
+   })
+   ```
+
+4. Channels where you wish to use end to end encryption must be prefixed with
+   `private-encrypted-`.
+
+5. Subscribe to these channels in your client, and you're done! You can verify
+   it is working by checking out the debug console on the
+   https://dashboard.pusher.com/ and seeing the scrambled ciphertext.
+
+**Important note: This will not encrypt messages on channels that are not prefixed by private-encrypted-.**
+
+More info on End-to-end Encrypted Channels [here](https://pusher.com/docs/client_api_guide/client_encrypted_channels).
+
+## Receiving Webhooks
+
+If you have webhooks set up to POST a payload to a specified endpoint, you may wish to validate that these are actually from Pusher. The `Pusher` object achieves this by checking the authentication signature in the request body using your application credentials.
+
+#### `Pusher::validate_webhook`
+
+|Argument   |Description   |
+|:-:|:-:|
+|key `String`   | **Required**<br>Pass in the value sent in the request headers under the key "X-PUSHER-KEY". The method will check this matches your app key.   |
+|signature `String` | **Required**<br>This is the value in the request headers under the key "X-PUSHER-SIGNATURE". The method will verify that this is the result of signing the request body against your app secret.  |
+|body `String` | **Required**<br>The JSON string of the request body received. |
+
+|Return Values   |Description   |
+|:-:|:-:|
+|body_data `Dict`   | If validation was successful, the return value will be the parsed payload. Otherwise, it will be `None`.   |
+
+`Pusher::validate_webhook` will raise a `TypeError` if it is called with any parameters of the wrong type.
+
+##### Example
+
+```python
+webhook = pusher_client.validate_webhook(
+
+  key="key_sent_in_header",
+
+  signature="signature_sent_in_header",
+
+  body="{ \"time_ms\": 1327078148132  \"events\": [ { \"name\": \"event_name\", \"some\": \"data\" }  ]}"
+)
+
+print webhook["events"]
 ```
 
-You should notice that first we replace `-` by `_` by using the sed
-command. We do that because `jmespath`, the underlying library used by `niet`
-, poorly handle key that contain `-`. We chosen to replace all - by _ to avoid
-any issues elsewhere on the file
+## Request Library Configuration
 
-Here is an exemple of an automated ssh connection in a kvm virtualised lab
-environment by looking for vmname in dhcp file with `niet` and performing the
-ssh connection to the server even if its ip changed.
+Users can configure the library to use different backends to send calls to our API. The HTTP libraries we support are:
 
-The ssh connection here can be performed with this command:
+* [Requests](https://requests.readthedocs.io/en/master/) (`pusher.requests.RequestsBackend`). This is used by default.
+* [Tornado](http://www.tornadoweb.org/en/stable/) (`pusher.tornado.TornadoBackend`).
+* [AsyncIO](https://docs.python.org/3/library/asyncio.html) (`pusher.aiohttp.AsyncIOBackend`).
+* [Google App Engine](https://cloud.google.com/appengine/docs/python/urlfetch/) (`pusher.gae.GAEBackend`).
 
-```sh
-ssh -o ProxyCommand='nc $(sed 's/-/_/g' /var/lib/libvirt/dnsmasq/virbr0.status | niet "[?hostname=='''%h'''].ip_address") %p' root@rhel79
-```
+Upon initializing a `Pusher` instance, pass in any of these options to the `backend` keyword argument.
 
-Tips - to ease that use you can for example set this `.ssh/config` entry:
+### Google App Engine
 
-```
-host lab-*
-user root
-ProxyCommand /usr/bin/nc $(sed 's/-/_/g' /var/lib/libvirt/dnsmasq/virbr0.status | niet "[?hostname=='$(echo %h | cut -d'-' -f2 )'].ip_address") %p
-```
+GAE users are advised to use the `pusher.gae.GAEBackend` backend to ensure compatability.
 
-And then perform a `ssh lab-rhel79` or a `ssh lab-satellite` to join all VMs
-from your lab, by the hostname prefixed by `lab-`.
+## Feature Support
 
-### Extract a list and parse it in shell
+Feature                                    | Supported
+-------------------------------------------| :-------:
+Trigger event on single channel            | *&#10004;*
+Trigger event on multiple channels         | *&#10004;*
+Excluding recipients from events           | *&#10004;*
+Authenticating private channels            | *&#10004;*
+Authenticating presence channels           | *&#10004;*
+Get the list of channels in an application | *&#10004;*
+Get the state of a single channel          | *&#10004;*
+Get a list of users in a presence channel  | *&#10004;*
+WebHook validation                         | *&#10004;*
+Heroku add-on support                      | *&#10004;*
+Debugging & Logging                        | *&#10004;*
+Cluster configuration                      | *&#10004;*
+Timeouts                                   | *&#10004;*
+HTTPS                                      | *&#10004;*
+End-to-end Encryption                      | *&#10004;*
+HTTP Proxy configuration                   | *&#10008;*
+HTTP KeepAlive                             | *&#10008;*
 
-Deal with list of items
-```sh
-$ for el in $(niet project.list tests/samples/sample.yaml); do echo ${el}; done
-item1
-item2
-item3
-```
+#### Helper Functionality
 
-Also you can `eval` your `niet` output to setput some shell variables
-that you can reuse in your shell scripts, the following example is similar to
-the previous example but make use of the eval ouput format (`-f eval`):
+These are helpers that have been implemented to to ensure interactions with the HTTP API only occur if they will not be rejected e.g. [channel naming conventions](https://pusher.com/docs/channels/using_channels/channels#channel-naming-conventions).
 
-```sh
-$ eval $(niet -f eval project.list tests/samples/sample.yaml)
-$ for el in ${project__list}; do echo $el; done
-zero
-one
-two
-three
-```
-
-### Extract a complex object and parse it in shell
-
-Extract the object as JSON to store it in shell variable :
-```shell
-$ project="$(niet -f json .project tests/samples/sample.yaml)"
-```
-
-Then parse it after in bash in this example:
-```shell
-$ niet .meta.name <<< $project
-my-project
-```
-
-### Transform JSON into YAML
-
-With niet you can easily convert your JSON into YAML
-```shell
-$ niet . tests/samples/sample.json -f yaml
-project:
-  foo: bar
-  list:
-  - item1
-  - item2
-  - item3
-  meta:
-    name: my-project
-```
-
-### Transform YAML into JSON
-
-With niet you can easily convert your YAML into JSON
-```shell
-$ niet . tests/samples/sample.yaml -f json
-{
-    "project": {
-        "meta": {
-            "name": "my-project"
-        },
-        "foo": "bar",
-        "list": [
-            "item1",
-            "item2",
-            "item3"
-        ]
-    }
-}
-```
-
-### Transform JSON into TOML
-
-With niet you can easily convert your JSON into TOML
-```shell
-$ niet . tests/samples/sample.json -f toml
-[project]
-foo = "bar"
-list = ["item1", "item2", "item3"]
-test-dash = "value"
-
-[project.meta]
-name = "my-project"
-```
-
-### Transform YAML into TOML
-
-With niet you can easily convert your YAML into TOML
-```shell
-$ niet . tests/samples/sample.yaml -f toml
-[project]
-foo = "bar"
-list = ["item1", "item2", "item3"]
-test-dash = "value"
-
-[project.meta]
-name = "my-project"
-```
-
-### Transform TOML into YAML
-
-With niet you can easily convert your TOML into YAML
-```shell
-niet . tests/samples/sample.toml -f yaml
-project:
-  foo: bar
-  list:
-  - item1
-  - item2
-  - item3
-  meta:
-    name: my-project
-  test-dash: value
-```
-
-### Indent JSON file
-
-This is an example of how to indent a JSON file :
-```shell
-$ niet . tests/samples/sample_not_indented.json
-{
-    "project": {
-        "meta": {
-            "name": "my-project"
-        },
-        "foo": "bar",
-        "list": [
-            "item1",
-            "item2",
-            "item3"
-        ],
-        "test-dash": "value"
-    }
-}
-```
+Helper Functionality                     | Supported
+-----------------------------------------| :-------:
+Channel name validation                  | &#10004;
+Limit to 100 channels per trigger        | &#10004;
+Limit event name length to 200 chars     | &#10004;
 
 
-## Tips
+## Running the tests
 
-You can pass your search with or without quotes like this:
-```sh
-$ niet project.meta.name your-file.yaml
-$ niet "project.meta.name" your-file.yaml
-```
+To run the tests run `python setup.py test`
 
-You can execute `niet` step by step by using the debug mode. It will allow
-you to inspect your execution during your debug sessions.
+## License
 
-## Contribute
-
-If you want to contribute to niet [please first read the contribution guidelines](CONTRIBUTING.md)
-
-## Licence
-
-This project is under the MIT License.
-
-[See the license file for more details](LICENSE)
+Copyright (c) 2015 Pusher Ltd. See LICENSE for details.
