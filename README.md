@@ -1,487 +1,449 @@
-pytorch_memlab
+[![PyPI - Latest Release](https://img.shields.io/pypi/v/hickle.svg?logo=pypi&logoColor=white&label=PyPI)](https://pypi.python.org/pypi/hickle)
+[![PyPI - Python Versions](https://img.shields.io/pypi/pyversions/hickle.svg?logo=python&logoColor=white&label=Python)](https://pypi.python.org/pypi/hickle)
+[![Travis CI - Build Status](https://img.shields.io/travis/com/telegraphic/hickle/master.svg?logo=travis%20ci&logoColor=white&label=Travis%20CI)](https://travis-ci.com/telegraphic/hickle)
+[![AppVeyor - Build Status](https://img.shields.io/appveyor/ci/telegraphic/hickle/master.svg?logo=appveyor&logoColor=white&label=AppVeyor)](https://ci.appveyor.com/project/telegraphic/hickle)
+[![CodeCov - Coverage Status](https://img.shields.io/codecov/c/github/telegraphic/hickle/master.svg?logo=codecov&logoColor=white&label=Coverage)](https://codecov.io/gh/telegraphic/hickle/branches/master)
+[![JOSS Status](http://joss.theoj.org/papers/0c6638f84a1a574913ed7c6dd1051847/status.svg)](http://joss.theoj.org/papers/0c6638f84a1a574913ed7c6dd1051847)
+
+
+Hickle
 ======
-[![Build Status](https://travis-ci.com/Stonesjtu/pytorch_memlab.svg?token=vyTdxHbi1PCRzV6disHp&branch=master)](https://travis-ci.com/Stonesjtu/pytorch_memlab)
-![PyPI](https://img.shields.io/pypi/v/pytorch_memlab.svg)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/Stonesjtu/pytorch_memlab.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/Stonesjtu/pytorch_memlab/context:python)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/pytorch_memlab.svg)
 
-A simple and accurate **CUDA** memory management laboratory for pytorch,
-it consists of different parts about the memory:
+Hickle is an [HDF5](https://www.hdfgroup.org/solutions/hdf5/) based clone of `pickle`, with a twist: instead of serializing to a pickle file,
+Hickle dumps to an HDF5 file (Hierarchical Data Format). It is designed to be a "drop-in" replacement for pickle (for common data objects), but is
+really an amalgam of `h5py` and `dill`/`pickle` with extended functionality.
 
-- Features:
+That is: `hickle` is a neat little way of dumping python variables to HDF5 files that can be read in most programming
+languages, not just Python. Hickle is fast, and allows for transparent compression of your data (LZF / GZIP).
 
-  - Memory Profiler: A `line_profiler` style CUDA memory profiler with simple API.
-  - Memory Reporter: A reporter to inspect tensors occupying the CUDA memory.
-  - Courtesy: An interesting feature to temporarily move all the CUDA tensors into
-    CPU memory for courtesy, and of course the backward transferring.
-  - IPython support through `%mlrun`/`%%mlrun` line/cell magic
-    commands.
+Why use Hickle?
+---------------
 
+While `hickle` is designed to be a drop-in replacement for `pickle` (or something like `json`), it works very differently.
+Instead of serializing / json-izing, it instead stores the data using the excellent [h5py](https://www.h5py.org/) module.
 
-- Table of Contents
-  * [Installation](#installation)
-  * [User-Doc](#user-doc)
-    + [Memory Profiler](#memory-profiler)
-    + [IPython support](#ipython-support)
-    + [Memory Reporter](#memory-reporter)
-    + [Courtesy](#courtesy)
-    + [ACK](#ack)
-  * [CHANGES](#changes)
+The main reasons to use hickle are:
 
-Installation
------
+  1. It's faster than pickle and cPickle.
+  2. It stores data in HDF5.
+  3. You can easily compress your data.
 
-- Released version:
-```bash
-pip install pytorch_memlab
-```
+The main reasons not to use hickle are:
 
-- Newest version:
-```bash
-pip install git+https://github.com/stonesjtu/pytorch_memlab
-```
+  1. You don't want to store your data in HDF5. While hickle can serialize arbitrary python objects, this functionality is provided only for convenience, and you're probably better off just using the pickle module.
+  2. You want to convert your data in human-readable JSON/YAML, in which case, you should do that instead.
 
-What's for
------
+So, if you want your data in HDF5, or if your pickling is taking too long, give hickle a try.
+Hickle is particularly good at storing large numpy arrays, thanks to `h5py` running under the hood.
 
-Out-Of-Memory errors in pytorch happen frequently, for new-bees and
-experienced programmers. A common reason is that most people don't really
-learn the underlying memory management philosophy of pytorch and GPUs.
-They wrote memory in-efficient codes and complained about pytorch eating too
-much CUDA memory.
+Documentation
+-------------
 
-In this repo, I'm going to share some useful tools to help debugging OOM, or
-to inspect the underlying mechanism if anyone is interested in.
+Documentation for hickle can be found at [telegraphic.github.io/hickle/](http://telegraphic.github.io/hickle/).
 
 
-User-Doc
------
+Usage example
+-------------
 
-### Memory Profiler
+Hickle is nice and easy to use, and should look very familiar to those of you who have pickled before.
 
-The memory profiler is a modification of python's `line_profiler`, it gives
-the memory usage info for each line of code in the specified function/method.
-
-#### Sample:
+In short, `hickle` provides two methods: a [hickle.load](http://telegraphic.github.io/hickle/toc.html#hickle.load)
+method, for loading hickle files, and a [hickle.dump](http://telegraphic.github.io/hickle/toc.html#hickle.dump)
+method, for dumping data into HDF5. Here's a complete example:
 
 ```python
-import torch
-from pytorch_memlab import LineProfiler
+import os
+import hickle as hkl
+import numpy as np
 
-def inner():
-    torch.nn.Linear(100, 100).cuda()
+# Create a numpy array of data
+array_obj = np.ones(32768, dtype='float32')
 
-def outer():
-    linear = torch.nn.Linear(100, 100).cuda()
-    linear2 = torch.nn.Linear(100, 100).cuda()
-    inner()
+# Dump to file
+hkl.dump(array_obj, 'test.hkl', mode='w')
 
-with LineProfiler(outer, inner) as prof:
-    outer()
-prof.display()
+# Dump data, with compression
+hkl.dump(array_obj, 'test_gzip.hkl', mode='w', compression='gzip')
+
+# Compare filesizes
+print('uncompressed: %i bytes' % os.path.getsize('test.hkl'))
+print('compressed:   %i bytes' % os.path.getsize('test_gzip.hkl'))
+
+# Load data
+array_hkl = hkl.load('test_gzip.hkl')
+
+# Check the two are the same file
+assert array_hkl.dtype == array_obj.dtype
+assert np.all((array_hkl, array_obj))
 ```
 
-After the script finishes or interrupted by keyboard, it gives the following
-profiling info if you're in a Jupyter notebook:
+### HDF5 compression options
 
-<p align="center"><img src="readme-output.png" width="640"></p>
+A major benefit of `hickle` over `pickle` is that it allows fancy HDF5 features to
+be applied, by passing on keyword arguments on to `h5py`. So, you can do things like:
+  ```python
+  hkl.dump(array_obj, 'test_lzf.hkl', mode='w', compression='lzf', scaleoffset=0,
+           chunks=(100, 100), shuffle=True, fletcher32=True)
+  ```
+A detailed explanation of these keywords is given at http://docs.h5py.org/en/latest/high/dataset.html,
+but we give a quick rundown below.
 
-or the following info if you're in a text-only terminal:
+In HDF5, datasets are stored as B-trees, a tree data structure that has speed benefits over contiguous
+blocks of data. In the B-tree, data are split into [chunks](http://docs.h5py.org/en/latest/high/dataset.html#chunked-storage),
+which is leveraged to allow [dataset resizing](http://docs.h5py.org/en/latest/high/dataset.html#resizable-datasets) and
+compression via [filter pipelines](http://docs.h5py.org/en/latest/high/dataset.html#filter-pipeline). Filters such as
+`shuffle` and `scaleoffset` move your data around to improve compression ratios, and `fletcher32` computes a checksum.
+These file-level options are abstracted away from the data model.
+
+Dumping custom objects
+----------------------
+Hickle provides several options to store objects of custom python classes. Objects of classes derived
+from built in classes, numpy, scipy, pandas and astropy objects will be stored using the corresponding 
+loader provided by hickle. Any other classes per default will be stored as binary pickle string.
+Starting with version 4.x hickle offers the possibility to define dedicated loader functions for custom
+classes and starting with hickle 5.x these can be collected in module, package and application specific
+loader modules. 
 
 ```
-## outer
-
-active_bytes reserved_bytes line  code
-         all            all
-        peak           peak
-       0.00B          0.00B    7  def outer():
-      40.00K          2.00M    8      linear = torch.nn.Linear(100, 100).cuda()
-      80.00K          2.00M    9      linear2 = torch.nn.Linear(100, 100).cuda()
-     120.00K          2.00M   10      inner()
-
-
-## inner
-
-active_bytes reserved_bytes line  code
-         all            all
-        peak           peak
-      80.00K          2.00M    4  def inner():
-     120.00K          2.00M    5      torch.nn.Linear(100, 100).cuda()
-```
-
-An explanation of what each column means can be found in the [Torch documentation](https://pytorch.org/docs/stable/cuda.html#torch.cuda.memory_stats). The name of any field from `memory_stats()`
-can be passed to `display()` to view the corresponding statistic.
-
-If you use `profile` decorator, the memory statistics are collected during
-multiple runs and only the maximum one is displayed at the end.
-We also provide a more flexible API called `profile_every` which prints the
-memory info every *N* times of function execution. You can simply replace
-`@profile` with `@profile_every(1)` to print the memory usage for each
-execution.
-
-The `@profile` and `@profile_every` can also be mixed to gain more control
-of the debugging granularity.
-
-- You can also add the decorator in the module class:
-
-```python
-class Net(torch.nn.Module):
+class MyClass():
     def __init__(self):
-        super().__init__()
-    @profile
-    def forward(self, inp):
-        #do_something
+        self.name = 'MyClass'
+        self.value = 42
 ```
 
-- The *Line Profiler* profiles the memory usage of CUDA device 0 by default,
-you may want to switch the device to profile by `set_target_gpu`. The gpu
-selection is globally,  which means you have to remember which gpu you are
-profiling on during the whole process:
+To create a loader for `MyClass` the `create_MyClass_dataset` and either the `load_MyClass` or the 
+`MyClassContainer` class have to be defined. 
 
-```python
-import torch
-from pytorch_memlab import profile, set_target_gpu
-@profile
-def func():
-    net1 = torch.nn.Linear(1024, 1024).cuda(0)
-    set_target_gpu(1)
-    net2 = torch.nn.Linear(1024, 1024).cuda(1)
-    set_target_gpu(0)
-    net3 = torch.nn.Linear(1024, 1024).cuda(0)
+```
+import hdf5
+form hickle.helpters import no_compression
 
-func()
+
+def create_MyClass_dataset(py_obj, h_group, name, **kwargs):
+    """ 
+    py_obj ..... the instance of MyClass to be dumped
+    h_group .... the h5py.Group py_obj should be dumped into
+    name ....... the name of the h5py.Dataset or h5py.Group representing py_obj
+    **kwargs ... the compression keyword arguments passed to hickle.dump
+
+    # if content of MyClass can be represented as single matrix, vector or scalar
+    # values than created a dataset of approriate size. and either set its shape and 
+    # dtype parameters # to the approriate size and tyoe . or directly pass the data
+    # using the data parmameter
+    ds = h_group.create_dataset(name,data = py_obj.value,**kwargs)
+
+	## NOTE: if your class represents a scalar using empty tuple for shape
+    ##       than kwargs have to be filtered by no_compression
+    # ds = h_group.create_dataset(name,data = py_obj.value,shape=(),**no_compression(kwargs))
+
+	# set addtional attributes providing additional specialisation of content
+    ds.attrs['name'] = py_obj.name
+
+    # when done return the new dataset object and an empty tuple or list
+    return ds,()
+
+def load_Myclass(h_node, base_type, py_obj_type):
+    """
+    h_node ........ the h5py.Dataset object containing the data of MyClass object to restore
+    base_type ..... byte string naming the loader to be used for restoring MyClass object
+    py_obj_type ... MyClass class or MyClass subclass object 
+    """
+
+    # py_obj_type should point to MyClass or any of its subclasses
+    new_instance = py_obj_type()
+    new_instance.name = h_node.attrs['name']
+    new_instance.value = h_node[()]
+    return new_instance
 ```
 
+For dumping content of complex objects consisting of multiple sub-items which have to be
+stored as individual h5py.Dataset or h5py.Group objects than define `create_MyClass_dataset`
+using `create_group` method instead of `create_dataset` and define the corresponding
+`MyClassContainer` class.
 
-More samples can be found in `test/test_line_profiler.py`
+```
+import h5py
+from hickle.helpers import PyContainer
 
-### IPython support
+def create_MyClass_dataset(py_obj, h_group, name, **kwargs):
+    """ 
+    py_obj ..... the instance of MyClass to be dumped
+    h_group .... the h5py.Group py_obj should be dumped into
+    name ....... the name of the h5py.Dataset or h5py.Group representing py_obj
+    **kwargs ... the compression keyword arguments passed to hickle.dump
 
-Make sure you have `IPython` installed, or have installed `pytorch-memlab` with
-`pip install pytorch-memlab[ipython]`.
+    ds = h_group.create_group(name)
 
-First, load the extension:
+	# set addtional attributes providing additional specialisation of content
+    ds.attrs['name'] = py_obj.name
 
-```python
-%load_ext pytorch_memlab
+    # when done return the new dataset object and a tuple, list or generator function
+	# providing for all subitems a tuple or list describing containgin 
+    #  name ..... the name to be used storing the subitem within the h5py.Group object
+    #  item ..... the subitem object to be stored
+    #  attrs .... dictionary included in attrs of created h5py.Group or h5py.Dataset
+    #  kwargs ... the kwargs as passed to create_MyClass_dataset function
+    return ds,(('name',py_obj.name,{},kwargs),('value',py_obj.value,{'the answer':True},kwargs))
+
+
+
+class MyClassContainer(PyContainer):
+    """
+    Valid container classes must be derived from hickle.helpers.PyContainer class
+    """
+
+    def __init__(self,h5_attrs,base_type,object_type):
+		"""
+		h5_attrs ...... the attrs dictionary attached to the group representing MyClass
+    	base_type ..... byte string naming the loader to be used for restoring MyClass object
+    	py_obj_type ... MyClass class or MyClass subclass object 
+		"""
+
+		# the optional protected _content parameter of the PyContainer __init__
+        # method can be used to change the data structure used to store
+        # the subitems passed to the append method of the PyContainer class
+        # per default it is set to []
+        super().__init__(h5_attrs,base_type,object_type,_content = dict())
+
+	def filter(self,h_parent): # optional overload
+        """
+		generator member functoin which can be overloaded to reorganize subitems
+        of h_parent h5py.Group before beeing restored by hickle. Its default
+        implementation simply yields from h_parent.items(). 
+		"""
+		yield from super().filter(h_parent)
+
+	def append(self,name,item,h5_attrs): # optional overload
+        """
+		in case _content parameter was explicitly set or subitems should be sored 
+        in specific order or have to be preprocessed before the next item is appended
+        than this can be done before storing in self._content.
+
+        name ....... the name identifying subitem item within the parent hdf5.Group
+        item ....... the object representing the subitem
+        h5_attrs ... attrs dictionary attached to h5py.Dataset, h5py.Group representing item
+		"""
+		self._content[name] = item
+
+	def convert(self):
+        """
+		called by hickle when all sub items have been appended to MyClass PyContainer
+		this method must be implemented by MyClass PyContainer.
+		"""
+
+    	# py_obj_type should point to MyClass or any of its subclasses
+    	new_instance = py_obj_type()
+		new_instance.__dict__.update(self._content)
+		return new_instance
 ```
 
-This makes the `%mlrun` and `%%mlrun` line/cell magics available for use. For
-example, in a new cell run the following to profile an entire cell
+In a last step the loader for MyClass has to be registered with hickle. This is done by calling
+`hickle.lookup.LoaderManager.register_class` method
 
-```python
-%%mlrun -f func
-import torch
-from pytorch_memlab import profile, set_target_gpu
-def func():
-    net1 = torch.nn.Linear(1024, 1024).cuda(0)
-    set_target_gpu(1)
-    net2 = torch.nn.Linear(1024, 1024).cuda(1)
-    set_target_gpu(0)
-    net3 = torch.nn.Linear(1024, 1024).cuda(0)
 ```
+from hickle.lookup import LoaderManager
 
-Or you can invoke the profiler for a single statement on via the `%mlrun` cell
-magic.
-
-```python
-import torch
-from pytorch_memlab import profile, set_target_gpu
-def func(input_size):
-    net1 = torch.nn.Linear(input_size, 1024).cuda(0)
-%mlrun -f func func(2048)
-```
-
-See `%mlrun?` for help on what arguments are supported. You can set the GPU
-device to profile, dump profiling results to a file, and return the
-`LineProfiler` object for post-profile inspection.
-
-Find out more by checking out the [demo Jupyter notebook](./demo.ipynb)
-
-
-### Memory Reporter
-
-As *Memory Profiler* only gives the overall memory usage information by lines,
-a more low-level memory usage information can be obtained by *Memory Reporter*.
-
-*Memory reporter* iterates all the `Tensor` objects and gets the underlying
-`Storage` object to get the actual memory usage instead of the surface
-`Tensor.size`.
-
-#### Sample
-
-- A minimal one:
-
-```python
-import torch
-from pytorch_memlab import MemReporter
-linear = torch.nn.Linear(1024, 1024).cuda()
-reporter = MemReporter()
-reporter.report()
-```
-outputs:
-```
-Element type                                            Size  Used MEM
--------------------------------------------------------------------------------
-Storage on cuda:0
-Parameter0                                      (1024, 1024)     4.00M
-Parameter1                                           (1024,)     4.00K
--------------------------------------------------------------------------------
-Total Tensors: 1049600  Used Memory: 4.00M
-The allocated memory on cuda:0: 4.00M
--------------------------------------------------------------------------------
-```
-
-- You can also pass in a model object for automatically name inference.
-
-```python
-import torch
-from pytorch_memlab import MemReporter
-
-linear = torch.nn.Linear(1024, 1024).cuda()
-inp = torch.Tensor(512, 1024).cuda()
-# pass in a model to automatically infer the tensor names
-reporter = MemReporter(linear)
-out = linear(inp).mean()
-print('========= before backward =========')
-reporter.report()
-out.backward()
-print('========= after backward =========')
-reporter.report()
-```
-
-outputs:
-```
-========= before backward =========
-Element type                                            Size  Used MEM
--------------------------------------------------------------------------------
-Storage on cuda:0
-weight                                          (1024, 1024)     4.00M
-bias                                                 (1024,)     4.00K
-Tensor0                                          (512, 1024)     2.00M
-Tensor1                                                 (1,)   512.00B
--------------------------------------------------------------------------------
-Total Tensors: 1573889  Used Memory: 6.00M
-The allocated memory on cuda:0: 6.00M
--------------------------------------------------------------------------------
-========= after backward =========
-Element type                                            Size  Used MEM
--------------------------------------------------------------------------------
-Storage on cuda:0
-weight                                          (1024, 1024)     4.00M
-weight.grad                                     (1024, 1024)     4.00M
-bias                                                 (1024,)     4.00K
-bias.grad                                            (1024,)     4.00K
-Tensor0                                          (512, 1024)     2.00M
-Tensor1                                                 (1,)   512.00B
--------------------------------------------------------------------------------
-Total Tensors: 2623489  Used Memory: 10.01M
-The allocated memory on cuda:0: 10.01M
--------------------------------------------------------------------------------
-```
-
-
-- The reporter automatically deals with the sharing weights parameters:
-
-```python
-import torch
-from pytorch_memlab import MemReporter
-
-linear = torch.nn.Linear(1024, 1024).cuda()
-linear2 = torch.nn.Linear(1024, 1024).cuda()
-linear2.weight = linear.weight
-container = torch.nn.Sequential(
-    linear, linear2
+# to register loader for object mapped to h5py.Dataset use
+LoaderManager.register_class(
+   MyClass,                # MyClass type object this loader handles
+   b'MyClass',             # byte string representing the name of the loader 
+   create_MyClass_Dataset, # the create dataset function defined in first example above
+   load_MyClass,           # the load dataset function defined in first example above
+   None,                   # usually None
+   True,                   # Set to False to force explcit storage of MyClass instances in any case 
+   'custom'                # Loader is only used when custom loaders are enabled on calling hickle.dump
 )
-inp = torch.Tensor(512, 1024).cuda()
-# pass in a model to automatically infer the tensor names
 
-out = container(inp).mean()
-out.backward()
+# to register loader for object mapped to h5py.Group use
+LoaderManager.register_class(
+   MyClass,                # MyClass type object this loader handles
+   b'MyClass',             # byte string representing the name of the loader 
+   create_MyClass_Dataset, # the create dataset function defined in first example above
+   None,                   # usually None
+   MyClassContainer        # the PyContainer to be used to restore content of MyClass
+   True,                   # Set to False to force explcit storage of MyClass instances in any case 
+   None                    # if set to None loader is enabled unconditionally
+)
 
-# verbose shows how storage is shared across multiple Tensors
-reporter = MemReporter(container)
-reporter.report(verbose=True)
+# NOTE: in case content of MyClass instances may be mapped to h5py.Dataset or h5py.Group dependent upon
+# their actual complexity than both types of loaders can be merged into one single
+# using one common create_MyClass_dataset functoin and defining load_MyClass function and
+# MyClassContainer class
 ```
 
-outputs:
-```
-Element type                                            Size  Used MEM
--------------------------------------------------------------------------------
-Storage on cuda:0
-0.weight                                        (1024, 1024)     4.00M
-0.weight.grad                                   (1024, 1024)     4.00M
-0.bias                                               (1024,)     4.00K
-0.bias.grad                                          (1024,)     4.00K
-1.bias                                               (1024,)     4.00K
-1.bias.grad                                          (1024,)     4.00K
-Tensor0                                          (512, 1024)     2.00M
-Tensor1                                                 (1,)   512.00B
--------------------------------------------------------------------------------
-Total Tensors: 2625537  Used Memory: 10.02M
-The allocated memory on cuda:0: 10.02M
--------------------------------------------------------------------------------
-```
+For complex python modules, packages and applications defining several classes to be dumped and handled by 
+hickle calling `hickle.lookup.LoaderManager.register_class` explicitly very quickly becomes tedious and
+confusing. Therefore hickle offers from hickle 5.x on the possibility to collect all loaders for classes
+and objects defined by your module, package or application within dedicated loader modules and install
+them along with your module, package and application.
 
-- You can better understand the memory layout for more complicated module:
+For packages and application packages the `load_MyPackage.py` loader module has to be stored within
+`hickle_loaders` directory of the package directory (the first which contains a __init__.py file) and
+should be structured as follows.
 
-```python
-import torch
-from pytorch_memlab import MemReporter
-
-lstm = torch.nn.LSTM(1024, 1024).cuda()
-reporter = MemReporter(lstm)
-reporter.report(verbose=True)
-inp = torch.Tensor(10, 10, 1024).cuda()
-out, _ = lstm(inp)
-out.mean().backward()
-reporter.report(verbose=True)
 ```
+from hickle.helpers import PyContainer
 
-As shown below, the `(->)` indicates the re-use of the same storage back-end
-outputs:
-```
-Element type                                            Size  Used MEM
--------------------------------------------------------------------------------
-Storage on cuda:0
-weight_ih_l0                                    (4096, 1024)    32.03M
-weight_hh_l0(->weight_ih_l0)                    (4096, 1024)     0.00B
-bias_ih_l0(->weight_ih_l0)                           (4096,)     0.00B
-bias_hh_l0(->weight_ih_l0)                           (4096,)     0.00B
-Tensor0                                       (10, 10, 1024)   400.00K
--------------------------------------------------------------------------------
-Total Tensors: 8499200  Used Memory: 32.42M
-The allocated memory on cuda:0: 32.52M
-Memory differs due to the matrix alignment
--------------------------------------------------------------------------------
-Element type                                            Size  Used MEM
--------------------------------------------------------------------------------
-Storage on cuda:0
-weight_ih_l0                                    (4096, 1024)    32.03M
-weight_ih_l0.grad                               (4096, 1024)    32.03M
-weight_hh_l0(->weight_ih_l0)                    (4096, 1024)     0.00B
-weight_hh_l0.grad(->weight_ih_l0.grad)          (4096, 1024)     0.00B
-bias_ih_l0(->weight_ih_l0)                           (4096,)     0.00B
-bias_ih_l0.grad(->weight_ih_l0.grad)                 (4096,)     0.00B
-bias_hh_l0(->weight_ih_l0)                           (4096,)     0.00B
-bias_hh_l0.grad(->weight_ih_l0.grad)                 (4096,)     0.00B
-Tensor0                                       (10, 10, 1024)   400.00K
-Tensor1                                       (10, 10, 1024)   400.00K
-Tensor2                                        (1, 10, 1024)    40.00K
-Tensor3                                        (1, 10, 1024)    40.00K
--------------------------------------------------------------------------------
-Total Tensors: 17018880         Used Memory: 64.92M
-The allocated memory on cuda:0: 65.11M
-Memory differs due to the matrix alignment
--------------------------------------------------------------------------------
+## define below all create_MyClass_dataset load_MyClass functions and MyClassContainer classes
+## of the loaders serving your module, package, application package or application
+
+....
+
+## the class_register table and the exclude_register table are required
+## by hickle to properly load and apply your loaders
+## each row in the class register table will corresponds to the parameters
+## of LoaderManager.register_class and has to be specified in the same order
+## as above
+
+class_register = [
+   [ MyClass,                # MyClass type object this loader handles
+     b'MyClass',             # byte string representing the name of the loader 
+     create_MyClass_Dataset, # the create dataset function defined in first example above
+     load_MyClass,           # the load dataset function defined in first example above
+     None,                   # usually None
+     True,                   # Set to False to force explcit storage of MyClass instances in any case 
+     'custom'                # Loader is only used when custom loaders are enabled on calling hickle.dump
+   ],
+   [ MyClass,                # MyClass type object this loader handles
+     b'MyClass',             # byte string representing the name of the loader 
+     create_MyClass_Dataset, # the create dataset function defined in first example above
+     None,                   # usually None
+     MyClassContainer        # the PyContainer to be used to restore content of MyClass
+     True,                   # Set to False to force explcit storage of MyClass instances in any case 
+     None                    # if set to None loader is enabled unconditionally
+   ]
+]
+
+# used by hickle 4.x legacy loaders and other special loaders
+# usually an empty list
+exclude_register = []
 ```
 
-NOTICE:
-> When forwarding with `grad_mode=True`, pytorch maintains tensor buffers for
-> future Back-Propagation, in C level. So these buffers are not going to be
-> managed or collected by pytorch. But if you store these intermediate results
-> as python variables, then they will be reported.
+For single file modules and application scripts the `load_MyModule.py` or `load_MyApp.py` files have to
+be stored within the `hickle_loaders` directory located within the same directory as `MyModule.py` or
+`My_App.py`. For further examples of more complex loaders and on how to store bytearrays and strings
+such that they can be compressed when stored see default loader modules in  `hickle/loaders/` directory.
 
-- You can also filter the device to report on by passing extra arguments:
-`report(device=torch.device(0))`
 
-- A failed example due to pytorch's C side tensor buffers
+### Note: storing complex objects in HDF5 file
+The HDF5 file format is designed to store several big matrices, images and vectors efficiently
+and attache some metadata and to provide a convenient way access the data through a tree structure.
+It is not designed like python pickle format for efficiently mapping the in memory object structure
+to a file. Therefore mindlessly storing plenty of tiny objects and scalar values without combining
+them into a single datataset will cause the HDF5 and thus the file created by hickle explode. File
+sizes of several 10 GB are likely and possible when a pickle file would just need some 100 MB.
+This can be prevented by `create_MyClass_dataset` method combining sub-items into bigger numpy arrays
+or other data structures which can be mapped to `h5py.Datasets` and `load_MyClass` function and /or 
+`MyClassContainer.convert` method restoring actual structure of the sub-items on load.
 
-In the following example, a temp buffer is created at `inp * (inp + 2)` to
-store both `inp` and `inp + 2`, unfortunately python only knows the existence
-of inp, so we have *2M* memory lost, which is the same size of Tensor `inp`.
+Recent changes
+--------------
 
-```python
-import torch
-from pytorch_memlab import MemReporter
+* June 2020: Major refactor to version 4, and removal of support for Python 2.
+* December 2018: Accepted to Journal of Open-Source Software (JOSS).
+* June 2018: Major refactor and support for Python 3.
+* Aug 2016: Added support for scipy sparse matrices `bsr_matrix`, `csr_matrix` and `csc_matrix`.
 
-linear = torch.nn.Linear(1024, 1024).cuda()
-inp = torch.Tensor(512, 1024).cuda()
-# pass in a model to automatically infer the tensor names
-reporter = MemReporter(linear)
-out = linear(inp * (inp + 2)).mean()
-reporter.report()
+Performance comparison
+----------------------
+
+Hickle runs a lot faster than pickle with its default settings, and a little faster than pickle with `protocol=2` set:
+
+```Python
+In [1]: import numpy as np
+
+In [2]: x = np.random.random((2000, 2000))
+
+In [3]: import pickle
+
+In [4]: f = open('foo.pkl', 'w')
+
+In [5]: %time pickle.dump(x, f)  # slow by default
+CPU times: user 2 s, sys: 274 ms, total: 2.27 s
+Wall time: 2.74 s
+
+In [6]: f = open('foo.pkl', 'w')
+
+In [7]: %time pickle.dump(x, f, protocol=2)  # actually very fast
+CPU times: user 18.8 ms, sys: 36 ms, total: 54.8 ms
+Wall time: 55.6 ms
+
+In [8]: import hickle
+
+In [9]: f = open('foo.hkl', 'w')
+
+In [10]: %time hickle.dump(x, f)  # a bit faster
+dumping <type 'numpy.ndarray'> to file <HDF5 file "foo.hkl" (mode r+)>
+CPU times: user 764 us, sys: 35.6 ms, total: 36.4 ms
+Wall time: 36.2 ms
 ```
 
-outputs:
+So if you do continue to use pickle, add the `protocol=2` keyword (thanks @mrocklin for pointing this out).  
+
+For storing python dictionaries of lists, hickle beats the python json encoder, but is slower than uJson. For a dictionary with 64 entries, each containing a 4096 length list of random numbers, the times are:
+
+
+    json took 2633.263 ms
+    uJson took 138.482 ms
+    hickle took 232.181 ms
+
+
+It should be noted that these comparisons are of course not fair: storing in HDF5 will not help you convert something into JSON, nor will it help you serialize a string. But for quick storage of the contents of a python variable, it's a pretty good option.
+
+Installation guidelines
+-----------------------
+
+### Easy method
+Install with `pip` by running `pip install hickle` from the command line.
+
+#### Install on Windows 32 bit
+
+Prebuilt Python wheels packages are available on PyPi until H5PY version 2.10 and Python 3.8.
+Any newer versions have to be built and installed Manually.
+
+1) Install h5py 2.10 with `pip` by running `pip install "h5py==2.10"` from the commandline
+
+2) Install with `pip` by running `pip install hickle` form the command line
+
+### Manual install
+
+1. You should have Python 3.5 and above installed
+
+2. Install hdf5
+(Official page: http://www.hdfgroup.org/ftp/HDF5/current/src/unpacked/release_docs/INSTALL)
+(Binary Downloads: https://portal.hdfgroup.org/display/support/Downloads)
+__Note:__ On Windows 32 bit install prebuilt binary package for libhdf5 [1.10.4](https://portal.hdfgroup.org/display/support/HDF5+1.10.4), which is the latest version supporting 32 bit on Windows
+
+3. Install h5py
+(Official page: http://docs.h5py.org/en/latest/build.html)
+
+4. Download `hickle`:
+via terminal: git clone https://github.com/telegraphic/hickle.git
+via manual download: Go to https://github.com/telegraphic/hickle and on right hand side you will find `Download ZIP` file
+
+5. cd to your downloaded `hickle` directory
+
+6. Then run the following command in the `hickle` directory:
+     `python setup.py install`
+
+
+### Testing
+
+Once installed from source, run `python setup.py test` to check it's all working.
+
+
+Bugs & contributing
+--------------------
+
+Contributions and bugfixes are very welcome. Please check out our [contribution guidelines](https://github.com/telegraphic/hickle/blob/master/CONTRIBUTING.md)
+for more details on how to contribute to development.
+
+
+Referencing hickle
+------------------
+
+If you use `hickle` in academic research, we would be grateful if you could reference [our paper](http://joss.theoj.org/papers/0c6638f84a1a574913ed7c6dd1051847) in the [Journal of Open-Source Software (JOSS)](http://joss.theoj.org/about).
+
 ```
-Element type                                            Size  Used MEM
--------------------------------------------------------------------------------
-Storage on cuda:0
-weight                                          (1024, 1024)     4.00M
-bias                                                 (1024,)     4.00K
-Tensor0                                          (512, 1024)     2.00M
-Tensor1                                                 (1,)   512.00B
--------------------------------------------------------------------------------
-Total Tensors: 1573889  Used Memory: 6.00M
-The allocated memory on cuda:0: 8.00M
-Memory differs due to the matrix alignment or invisible gradient buffer tensors
--------------------------------------------------------------------------------
+Price et al., (2018). Hickle: A HDF5-based python pickle replacement. Journal of Open Source Software, 3(32), 1115, https://doi.org/10.21105/joss.01115
 ```
-
-
-### Courtesy
-
-Sometimes people would like to preempt your running task, but you don't want
-to save checkpoint and then load, actually all they need is GPU resources (
-typically CPU resources and CPU memory is always spare in GPU clusters), so
-you can move all your workspaces from GPU to CPU and then halt your task until
-a restart signal is triggered, instead of saving&loading checkpoints and
-bootstrapping from scratch.
-
-Still developing..... But you can have fun with:
-```python
-from pytorch_memlab import Courtesy
-
-iamcourtesy = Courtesy()
-for i in range(num_iteration):
-    if something_happens:
-        iamcourtesy.yield_memory()
-        wait_for_restart_signal()
-        iamcourtesy.restore()
-```
-
-#### Known Issues
-
-- As is stated above in `Memory_Reporter`, intermediate tensors are not covered
-properly, so you may want to insert such courtesy logics after `backward` or
-before `forward`.
-- Currently the CUDA context of pytorch requires about 1 GB CUDA memory, which
-means even all Tensors are on CPU, 1GB of CUDA memory is wasted, :-(. However
-it's still under investigation if I can fully destroy the context and then
-re-init.
-
-
-### ACK
-
-I suffered a lot debugging weird memory usage during my 3-years of developing
-efficient Deep Learning models, and of course learned a lot from the great
-open source community.
-
-## CHANGES
-
-
-##### 0.2.4 (2021-10-28)
-  - Fix colab error (#35)
-  - Support python3.8 (#38)
-  - Support sparse tensor (#30)
-##### 0.2.3 (2020-12-01)
-  - Fix name mapping in `MemReporter` (#24)
-  - Fix reporter without model input (#22 #25)
-##### 0.2.2 (2020-10-23)
-  - Fix memory leak in `MemReporter`
-##### 0.2.1 (2020-06-18)
-  - Fix `line_profiler` not found
-##### 0.2.0 (2020-06-15)
-  - Add jupyter notebook figure and ipython support
-##### 0.1.0 (2020-04-17)
-  - Add ipython magic support (#8)
-##### 0.0.4 (2019-10-08)
-  - Add gpu switch for line-profiler(#2)
-  - Add device filter for reporter
-##### 0.0.3 (2019-06-15)
-  - Install dependency for pip installation
-##### 0.0.2 (2019-06-04)
-  - Fix statistics shift in loop
-##### 0.0.1 (2019-05-28)
-  - initial release
