@@ -1,45 +1,32 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
-with open('requirements.txt') as f:
-    required = f.read().splitlines()
+
+def scm_version():
+    def local_scheme(version):
+        if version.tag and not version.distance:
+            return version.format_with("")
+        else:
+            return version.format_choice("+{node}", "+{node}.dirty")
+    return {
+        "relative_to": __file__,
+        "version_scheme": "guess-next-dev",
+        "local_scheme": local_scheme
+    }
+
 
 setup(
-    name='moira-client',
-    version='2.4',
-    description='Client for Moira - Alerting system based on Graphite data',
-    keywords='moira monitoring client metrics alerting',
-    long_description="""
-        Moira is a real-time alerting tool, based on Graphite data.
-        moira-client is a python client for Moira API.
-        Key features:
-        - create, update, delete, manage triggers
-        - create, delete, update subscriptions
-        - manage tags, patterns, notifications, events, contacts
-    """,
-    author = 'Alexander Lukyanchenko',
-    author_email = 'al.lukyanchenko@gmail.com',
-    packages=[
-        'moira_client',
-        'moira_client.models'
-    ],
-    classifiers=[
-        'Development Status :: 4 - Beta',
-
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-
-        'Operating System :: OS Independent',
-        'Intended Audience :: Developers',
-
-        'Topic :: Software Development :: Libraries',
-        'Topic :: Utilities',
-        'Topic :: System :: Monitoring',
-
-        "License :: OSI Approved :: MIT License"
-    ],
-    url='https://github.com/moira-alert/python-moira-client',
-    install_requires=required
+    name="nmigen-soc",
+    use_scm_version=scm_version(),
+    author="whitequark",
+    author_email="whitequark@whitequark.org",
+    description="System on Chip toolkit for nMigen",
+    #long_description="""TODO""",
+    license="BSD",
+    setup_requires=["wheel", "setuptools", "setuptools_scm"],
+    install_requires=["nmigen>=0.2,<0.5"],
+    packages=find_packages(),
+    project_urls={
+        "Source Code": "https://github.com/nmigen/nmigen-soc",
+        "Bug Tracker": "https://github.com/nmigen/nmigen-soc/issues",
+    },
 )
