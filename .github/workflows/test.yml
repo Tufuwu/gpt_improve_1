@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10]
+        python-version: [3.8, 3.9, 3.10, 3.11]
 
     steps:
     - uses: actions/checkout@v2
@@ -25,11 +25,31 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: |
-        ./scripts/install_radare2.sh || exit 1
-        pip install -r python/requirements_ci.txt
-        cd python && python setup.py install
+      run: pip install --requirement dev-requirements.txt
 
-    - name: Run tests
+    - name: Validate coding guidelines
+      if: ${{ matrix.python-version == '3.8' }}
+      run: pre-commit run --all-files
+
+    - name: Run test suite
       run: |
-        cd test && make tests
+        python setup.py develop
+        pytest --verbose
+
+    - name: Build and install package
+      run: |
+        python setup.py bdist_wheel
+        python setup.py install
+
+    - name: Test drive installed pygount
+      run: |
+        pygount --version
+        pygount --help
+        pygount pygount *.cfg *.yaml
+        pygount --format=summary pygount *.cfg *.yaml
+
+    - name: Upload coverage to Coveralls
+      if: ${{ matrix.python-version == '3.8' }}
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      run: coveralls
