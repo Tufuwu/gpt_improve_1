@@ -13,8 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, 3.8]
-
+        python-version: [3.8]
+        include:
+          - python-version: 3.8
+            env: py27-pyramid14
+          - python-version: 3.8
+            env: py35-pyramid19
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -23,12 +27,16 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Install nexpy
-      run: |
-        pip install nexpy
-    - name: Test with pytest
-      run: |
-        pip install pytest
-        pytest
+        python -m pip install --upgrade pip setuptools
+        pip install tox
+    - name: Run tests
+      env:
+        TOXENV: ${{ matrix.env }}
+      run: tox
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
