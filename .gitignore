@@ -1,43 +1,28 @@
-*.py[cod]
-
-# C extensions
-*.so
-
-# Packages
-*.egg
-*.egg-info
-dist
-build
-eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
+/.cache
+/.coverage
+/.idea
+/build
+/config.mak
+/cola/_build_version.py
+/dist
+/env*
+/git-cola.app
+/git_cola.egg-info
+/local
+/Meta
+/pynsist_pkgs
+/.pytest_cache
+/README.html
+/share/locale
+/test/tmp
+/tags
+/.tox
 __pycache__
-
-# Installer logs
-pip-log.txt
-
-# Unit test / coverage reports
-.coverage
-.tox
-nosetests.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
-# autosaves
-*.py~
-*.yml~
-*.rst~
-*.txt~
-*.toml~
+.DS_Store
+.noseids
+*.gz
+*.py[cod]
+*.qm
+*.swp
+*.zip
+*~
