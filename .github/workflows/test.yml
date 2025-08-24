@@ -1,4 +1,4 @@
-name: Python package
+name: Python application
 
 on:
   push:
@@ -13,31 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10]
-        requirements-file: [minimal_requirements.txt, requirements.txt]
-
+        python-version: ["3.8", "3.9", "3.10", "pypy-3.7"]
     steps:
     - uses: actions/checkout@v2
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-
     - name: Install dependencies
       run: |
-        pip install -r ${{ matrix.requirements-file }}
-        pip install --upgrade pytest
-        pip install pytest-cov codecov
-
-    - name: Set environment variable
-      run: echo "MPLBACKEND=Agg" >> $GITHUB_ENV
-
-    - name: Test with pytest
-      run: python -m pytest --cov=.
-
-    - name: Upload coverage to Codecov
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        python -m pip install --upgrade pip
+    - name: Make scripts executable
       run: |
-        codecov
+        chmod +x setconf.py
+        chmod +x testcases/test.sh
+    - name: Run setconf.py
+      run: |
+        python setconf.py --test
+    - name: Run tests
+      run: |
+        cd testcases && ./test.sh
