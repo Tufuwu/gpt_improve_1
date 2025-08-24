@@ -1,62 +1,25 @@
-name: CI
+name: Node.js CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.6', '3.5', '2.7']
-        env:
-          PACKAGES: ["django>=1.11,<1.12", "django>=2.0,<2.1"]
-        exclude:
-          - python-version: '2.7'
-            env: PACKAGES: "django>=2.0,<2.1"
-        include:
-          - python-version: '3.6'
-            env: PACKAGES: "django>=2.1,<2.2"
-          - python-version: '3.6'
-            env: PACKAGES: "django>=2.2,<2.3"
-          - python-version: '3.6'
-            env: PACKAGES: "django>=3.0,<3.1"
+
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        node-version: '14'
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip wheel setuptools
-        pip install ${{ matrix.env.PACKAGES }} -e .[tests]
+      run: npm install
+      working-directory: ./gpt_improve
     - name: Run tests
-      run: |
-        pip install codecov
-        coverage run --rcfile=.coveragerc runtests.py
-    - name: Upload coverage to Codecov
-      if: success()
-      run: codecov
-
-  notifications:
-    runs-on: ubuntu-latest
-    if: failure()
-    steps:
-    - name: Notify IRC
-      run: |
-        echo "${{ github.repository }}#${{ github.run_number }} (${{ github.sha }}) ${{ github.event.head_commit.message }}  --  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        # Add IRC notification command here
-    - name: Notify Email
-      run: |
-        echo "Sending email to travis@edoburu.nl"
-        # Add email notification command here
-    - name: Notify Slack
-      run: |
-        echo "Sending Slack notification"
-        # Add Slack notification command here
+      run: npm test
+      working-directory: ./gpt_improve
