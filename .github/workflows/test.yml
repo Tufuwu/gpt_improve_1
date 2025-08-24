@@ -1,4 +1,4 @@
-name: Python CI
+name: CI
 
 on:
   push:
@@ -9,58 +9,42 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-22.04
+
     strategy:
-      fail-fast: false
       matrix:
-        python-version: [3.7, 3.8, 3.9, 3.10]
-        django-version: ["1.11", "2.0", "2.1", "2.2", "3.0", "3.1", "3.2", "4.0"]
-        exclude:
-          - python-version: 3.7
-            django-version: "4.0"
-          - python-version: 3.8
-            django-version: "1.11"
-          - python-version: 3.8
-            django-version: "2.0"
-          - python-version: 3.8
-            django-version: "2.1"
-          - python-version: 3.9
-            django-version: "1.11"
-          - python-version: 3.9
-            django-version: "2.0"
-          - python-version: 3.9
-            django-version: "2.1"
-          - python-version: 3.10
-            django-version: "1.11"
-          - python-version: 3.10
-            django-version: "2.0"
-          - python-version: 3.10
-            django-version: "2.1"
-          - python-version: 3.10
-            django-version: "2.2"
-          - python-version: 3.10
-            django-version: "3.0"
-          - python-version: 3.10
-            django-version: "3.1"
+        python-version: [3.8]
+
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install dependencies
       run: |
-        if [ "${{ matrix.python-version }}" == "3.7" ]; then
-          pip install -U importlib_metadata
-        fi
-        pip install tox
-    - name: Run tests
-      env:
-        TOXENV: py${{ matrix.python-version }}-django${{ matrix.django-version }}
+        sudo apt-get update
+        sudo apt-get -y install verilator libevent-dev libjson-c-dev
+
+    - name: Install Migen / LiteX / Cores
       run: |
-        echo "[testenv]" > tox.ini
-        echo "envlist = py{3.7,3.8,3.9,3.10}-django{1.11,2.0,2.1,2.2,3.0,3.1,3.2,4.0}" >> tox.ini
-        echo "[testenv:py${{ matrix.python-version }}-django${{ matrix.django-version }}]" >> tox.ini
-        echo "deps = django==${{ matrix.django-version }}" >> tox.ini
-        tox
+        wget https://raw.githubusercontent.com/enjoy-digital/litex/main/litex_setup.py
+        python3 litex_setup.py init install
+
+    - name: Install the version being tested
+      run: |
+        python3 setup.py install
+
+    - name: Get RISC-V toolchain
+      run: |
+        wget https://example.com/correct-path/riscv64-unknown-elf-gcc-20171231-x86_64-linux-centos6.tar.gz
+        tar -xvf riscv64-unknown-elf-gcc-20171231-x86_64-linux-centos6.tar.gz
+        echo "$PWD/riscv64-unknown-elf-gcc-20171231-x86_64-linux-centos6/bin" >> $GITHUB_PATH
+
+    - name: Run Unit tests
+      run: |
+        python setup.py test
