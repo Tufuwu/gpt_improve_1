@@ -1,8 +1,14 @@
-include src/*
-include pygeos/*.pyx pygeos/*.pxd
-include versioneer.py
-include pygeos/_version.py
-include pygeos/*.dll
 include LICENSE
-include pyproject.toml
-exclude MANIFEST.in
+include NOTICE
+include README.md
+
+include pympler/templates/*.html
+include pympler/templates/*.tpl
+include pympler/templates/*.css
+include pympler/templates/*.js
+
+include pympler/static/*.js
+
+recursive-include doc *
+prune doc/source
+prune doc/build

@@ -13,23 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
-        include:
-          - python-version: "3.6"
-            geos-version: "3.6.4"
-            numpy-version: "1.13.3"
-          - python-version: "3.7"
-            geos-version: "3.7.3"
-            numpy-version: "1.15.4"
-          - python-version: "3.8"
-            geos-version: "3.8.1"
-            numpy-version: "1.17.5"
-          - python-version: "3.9"
-            geos-version: "3.8.1"
-            numpy-version: "1.19.4"
-          - python-version: "3.10"
-            geos-version: "main"
-            numpy-version: "1.21.0"
+        python-version: ["3.8", "3.9"]
 
     steps:
     - uses: actions/checkout@v2
@@ -39,47 +23,25 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
-    - name: Cache GEOS
-      uses: actions/cache@v2
-      with:
-        path: ${{ github.workspace }}/geosinstall
-        key: ${{ runner.os }}-geos-${{ matrix.geos-version }}
-        restore-keys: |
-          ${{ runner.os }}-geos-
-
-    - name: Install GEOS
-      run: |
-        export GEOS_INSTALL=${{ github.workspace }}/geosinstall/geos-${{ matrix.geos-version }}
-        ./ci/install_geos.sh
-
     - name: Install dependencies
       run: |
-        pip install --disable-pip-version-check --upgrade pip
-        pip install --upgrade wheel
-        if [ "${{ matrix.geos-version }}" = "main" ]; then
-          pip install --upgrade --pre Cython numpy pytest;
-        else
-          pip install --upgrade Cython "numpy==${{ matrix.numpy-version }}" pytest;
-        fi
+        sudo apt-get update
+        sudo apt-get install -y graphviz python3-tk
+        pip install Sphinx recommonmark pep8 coverage coveralls numpy matplotlib
 
-    - name: Set environment variables
+    - name: Run tests
       run: |
-        echo "LD_LIBRARY_PATH=${{ github.workspace }}/geosinstall/geos-${{ matrix.geos-version }}/lib" >> $GITHUB_ENV
-        echo "PATH=${{ github.workspace }}/geosinstall/geos-${{ matrix.geos-version }}/bin:$PATH" >> $GITHUB_ENV
+        python -Wall setup.py install
+        python -Wall setup.py test
+        COVERAGE=1 coverage run test/runtest.py
+        python run.py --doctest
+        python run.py --html
 
-    - name: Build and install
-      run: |
-        python setup.py build_ext --inplace
-        pip install --no-deps -e .
+    - name: Check code style
+      run: pep8 --exclude=asizeof.py,metadata.py,bottle*.py --max-line-length=80 pympler
 
-    - name: Test with pytest
-      run: |
-        pytest --doctest-modules
+    - name: Upload coverage to Coveralls
+      if: success()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: coveralls
