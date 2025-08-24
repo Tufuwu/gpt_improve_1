@@ -1,4 +1,4 @@
-name: Python package
+name: CI
 
 on:
   push:
@@ -9,36 +9,51 @@ on:
       - main
 
 jobs:
-  test:
-    runs-on: ubuntu-22.04
+  build:
+    runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, pypy-3.7]
-        include:
-          - python-version: 3.9
-            env: lint
+        python-version: [3.8, 3.9]
+        jdk: [8]
+
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Set up JDK ${{ matrix.jdk }}
+      uses: actions/setup-java@v2
+      with:
+        java-version: ${{ matrix.jdk }}
+        distribution: 'temurin'
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Cache pip
+
+    - name: Install dependencies
+      run: bash scripts/install.sh
+
+    - name: Install SonarScanner
+      run: |
+        curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+        unzip sonar-scanner.zip
+        mv sonar-scanner-4.6.2.2472-linux sonar-scanner
+        export PATH="$PATH:${{ github.workspace }}/sonar-scanner/bin"
+
+    - name: Run tests
+      run: bash scripts/run_tests.sh
+
+    - name: SonarCloud Scan
+      if: github.event_name == 'push' && github.event.pull_request == null
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: sonar-scanner
+
+    - name: Cache SonarCloud
       uses: actions/cache@v3
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    - name: Install dependencies
-      run: |
-        if [ -f requirements-dev.txt ]; then pip install -U -r requirements-dev.txt; fi
-        pip install .
-    - name: Run tests
-      if: env.TOX_ENV == 'lint'
-      run: |
-        tox -e ${{ matrix.env }}
-    - name: Run pytest
-      if: env.TOX_ENV != 'lint'
-      run: |
-        pytest --dead-fixtures
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
